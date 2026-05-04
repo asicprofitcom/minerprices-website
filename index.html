@@ -3,599 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MinerPrices - Live ASIC Miner Profitability Rankings</title>
+    <title>MinerPrices - ASIC Miner Profitability</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        :root {
-            --primary: #FFD700;
-            --secondary: #FFC107;
-            --dark-bg: #0f0f0f;
-            --card-bg: #1a1a1a;
-            --border: #2a2a2a;
-            --text-primary: #ffffff;
-            --text-secondary: #b0b0b0;
-            --success: #4ade80;
-            --danger: #ef4444;
-        }
-        
-        html { scroll-behavior: smooth; }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
-            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a1a 100%);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        /* HEADER */
-        .header {
-            background: linear-gradient(135deg, var(--card-bg) 0%, #0f0f0f 100%);
-            border-bottom: 2px solid var(--primary);
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f0f;
+            color: #fff;
             padding: 20px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        
-        .header-content {
-            max-width: 1800px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        .logo {
-            font-size: 28px;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            letter-spacing: 1px;
-        }
-        
-        .btc-ticker {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            padding: 8px 16px;
-            border-radius: 20px;
-            color: #000;
-            font-weight: 600;
-            font-size: 13px;
-        }
-        
-        .status-badge {
-            background: rgba(74, 222, 128, 0.2);
-            border: 1px solid var(--success);
-            color: var(--success);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
         }
         
         .container {
-            max-width: 1800px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 30px 20px;
         }
         
-        /* CARD */
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        h1 {
+            color: #FFD700;
             margin-bottom: 20px;
-        }
-        
-        .card h1 {
-            color: var(--primary);
-            margin-bottom: 20px;
-            font-size: 28px;
-        }
-        
-        .card h2 {
-            color: var(--primary);
-            margin-bottom: 20px;
-            font-size: 22px;
-        }
-        
-        .subtitle {
-            color: var(--text-secondary);
-            margin-bottom: 30px;
-            font-size: 16px;
-        }
-        
-        /* TABLE */
-        .table-wrapper {
-            overflow-x: auto;
+            text-align: center;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            background: #1a1a1a;
+            border: 1px solid #333;
         }
         
         th {
-            background: rgba(255, 215, 0, 0.1);
-            color: var(--primary);
-            padding: 15px;
+            background: #FFD700;
+            color: #000;
+            padding: 12px;
             text-align: left;
-            font-weight: 700;
-            border-bottom: 2px solid var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-        }
-        
-        th:hover {
-            background: rgba(255, 215, 0, 0.15);
+            font-weight: bold;
         }
         
         td {
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border);
-            vertical-align: middle;
+            padding: 12px;
+            border-bottom: 1px solid #333;
         }
         
         tr:hover {
-            background: rgba(255, 215, 0, 0.05);
+            background: #222;
         }
         
-        .rank {
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 16px;
-            width: 50px;
+        .price {
+            color: #4ade80;
+            font-weight: bold;
         }
         
-        .miner-name {
-            font-weight: 600;
-            color: var(--text-primary);
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
         }
         
-        .profit-daily {
-            color: var(--success);
-            font-weight: 700;
-            font-size: 16px;
+        .error {
+            background: #ef4444;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
         }
         
-        .algo-tag {
-            background: rgba(255, 215, 0, 0.1);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            color: var(--primary);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-        
-        .stats-grid {
+        .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
+            gap: 20px;
             margin-bottom: 30px;
         }
         
         .stat-box {
-            background: rgba(255, 215, 0, 0.1);
+            background: #1a1a1a;
             padding: 20px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
+            border: 1px solid #333;
+            border-radius: 8px;
             text-align: center;
         }
         
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 12px;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-        
-        .stat-value {
-            color: var(--primary);
-            font-size: 24px;
-            font-weight: 700;
-        }
-        
-        .filter-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        
-        .filter-btn {
-            padding: 8px 16px;
-            background: rgba(255, 215, 0, 0.1);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 12px;
-        }
-        
-        .filter-btn:hover, .filter-btn.active {
-            background: var(--primary);
-            color: #000;
-            border-color: var(--primary);
-        }
-        
-        .search-box {
-            margin-bottom: 20px;
-        }
-        
-        .search-box input {
-            width: 100%;
-            padding: 15px;
+        .stat-box h3 {
+            color: #FFD700;
             font-size: 14px;
-            border: 2px solid var(--border);
-            background: #0f0f0f;
-            border-radius: 8px;
-            color: var(--text-primary);
-            transition: all 0.3s;
+            margin-bottom: 10px;
         }
         
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
-        }
-        
-        @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: 1fr; }
-            table { font-size: 12px; }
-            th, td { padding: 8px 12px; }
+        .stat-box .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ade80;
         }
     </style>
 </head>
 <body>
-
-    <!-- HEADER -->
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">
-                <i class="fas fa-coins"></i> MinerPrices
-            </div>
-            <div class="btc-ticker">
-                <i class="fab fa-bitcoin"></i> BTC: $<span id="btcPrice">--</span>
-            </div>
-            <div class="status-badge">
-                <i class="fas fa-database"></i> <span id="dataSource">Loading...</span>
-            </div>
-        </div>
-    </div>
-
     <div class="container">
-        <!-- MAIN PROFITABILITY PAGE -->
-        <div class="card">
-            <h1>⛏️ Live ASIC Miner Profitability Rankings</h1>
-            <p class="subtitle">Real-time profitability sorted by daily USD earnings. Updated with live prices.</p>
-            
-            <!-- STATS -->
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <div class="stat-label">Most Profitable</div>
-                    <div class="stat-value" id="topProfit">$0.00</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Total Miners</div>
-                    <div class="stat-value" id="minerCount">0</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Average Daily Profit</div>
-                    <div class="stat-value" id="avgProfit">$0.00</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Last Updated</div>
-                    <div class="stat-value" style="font-size: 14px;" id="lastUpdate">--:--</div>
-                </div>
+        <h1>⛏️ MinerPrices - Live ASIC Miner Profitability</h1>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <h3>Total Miners</h3>
+                <div class="value" id="minerCount">0</div>
             </div>
-
-            <!-- SEARCH & FILTERS -->
-            <div class="search-box">
-                <input type="text" id="minerSearch" placeholder="🔍 Search miners (e.g., Antminer S21, Whatsminer)..." onkeyup="searchMiners()">
+            <div class="stat-box">
+                <h3>Top Daily Profit</h3>
+                <div class="value" id="topProfit">$0</div>
             </div>
-
-            <div class="filter-group">
-                <span style="color: var(--text-secondary);">Filter by Algorithm:</span>
-                <button class="filter-btn active" onclick="filterByAlgo('')">All</button>
-                <button class="filter-btn" onclick="filterByAlgo('SHA-256')">SHA-256 (Bitcoin)</button>
-                <button class="filter-btn" onclick="filterByAlgo('Scrypt')">Scrypt (Litecoin)</button>
-                <button class="filter-btn" onclick="filterByAlgo('Equihash')">Equihash (Zcash)</button>
+            <div class="stat-box">
+                <h3>Bitcoin Price</h3>
+                <div class="value" id="btcPrice">$0</div>
             </div>
-
-            <!-- PROFITABILITY TABLE -->
-            <div class="table-wrapper">
-                <table id="profitabilityTable">
-                    <thead>
-                        <tr>
-                            <th style="width: 50px;">Rank</th>
-                            <th onclick="sortTable('name')">Miner Model ↕</th>
-                            <th>Algorithm</th>
-                            <th onclick="sortTable('hashrate')">Hash Rate ↕</th>
-                            <th>Power (W)</th>
-                            <th onclick="sortTable('daily')" style="width: 120px;">💰 Daily Profit ↕</th>
-                            <th style="width: 120px;">Monthly</th>
-                            <th style="width: 120px;">Yearly</th>
-                        </tr>
-                    </thead>
-                    <tbody id="minersTableBody">
-                    </tbody>
-                </table>
+            <div class="stat-box">
+                <h3>Last Updated</h3>
+                <div class="value" id="lastUpdate">--:--</div>
             </div>
         </div>
-
-        <!-- INFO -->
-        <div class="card">
-            <h2><i class="fas fa-info-circle"></i> How This Works</h2>
-            <p style="margin-bottom: 15px;">
-                MinerPrices displays live profitability rankings for ASIC miners. Data includes real miner specs from top manufacturers 
-                and profitability is calculated using current cryptocurrency prices.
-            </p>
-            <ul style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 15px;">
-                <li>💰 Daily Profit = Mining revenue (at current prices) - Electricity cost ($0.08/kWh)</li>
-                <li>⛏️ All major ASIC miners from Bitmain, MicroBT, Whatsminer included</li>
-                <li>📈 Prices update every 5 minutes automatically</li>
-                <li>🔗 Data from live market prices (CoinGecko)</li>
-            </ul>
+        
+        <div id="table-container">
+            <div class="loading">Loading miners from database...</div>
         </div>
     </div>
 
     <script>
-        // Supabase Configuration
         const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_s5ocl3sDwpefFYuw3V-JEQ_FQzXGTHZ';
         const { createClient } = window.supabase;
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        const COINGECKO_API = 'https://api.coingecko.com/api/v3';
-        
-        let allMiners = [];
-        let displayedMiners = [];
-        let btcPrice = 0;
-        let ltcPrice = 0;
-        let zcashPrice = 0;
-        const ELECTRICITY_COST = 0.08; // $/kWh
-        let currentAlgoFilter = '';
-        let currentSortBy = 'daily';
 
-        // Complete miner database (like miningnow.com)
-        const MINERS_DATABASE = [
-            { id: 1, name: 'Antminer S23 Hyd 3U (1160 TH/s)', algorithm: 'SHA-256', hashrate: 1160e12, power: 11020 },
-            { id: 2, name: 'Whatsminer M79S (1.35 PH/s)', algorithm: 'SHA-256', hashrate: 1.35e15, power: 20000 },
-            { id: 3, name: 'Antminer S21e XP Hyd 3U (860 TH/s)', algorithm: 'SHA-256', hashrate: 860e12, power: 11180 },
-            { id: 4, name: 'Antminer S23e Hyd 2U (865 TH/s)', algorithm: 'SHA-256', hashrate: 865e12, power: 8650 },
-            { id: 5, name: 'Antminer S23 Hyd (580 TH/s)', algorithm: 'SHA-256', hashrate: 580e12, power: 5510 },
-            { id: 6, name: 'Bitdeer SealMiner A4 Ultra Hyd (886 TH/s)', algorithm: 'SHA-256', hashrate: 886e12, power: 8372 },
-            { id: 7, name: 'Bitdeer SealMiner A4 Pro Hyd (680 TH/s)', algorithm: 'SHA-256', hashrate: 680e12, power: 7412 },
-            { id: 8, name: 'Antminer S21 Hyd (335 TH/s)', algorithm: 'SHA-256', hashrate: 335e12, power: 5360 },
-            { id: 9, name: 'Antminer S23 (420 TH/s)', algorithm: 'SHA-256', hashrate: 420e12, power: 3360 },
-            { id: 10, name: 'Whatsminer M74S (860 TH/s)', algorithm: 'SHA-256', hashrate: 860e12, power: 8500 },
-            
-            { id: 11, name: 'Antminer L7 (9.5 GH/s)', algorithm: 'Scrypt', hashrate: 9.5e9, power: 3425 },
-            { id: 12, name: 'Whatsminer L7 (9.5 GH/s)', algorithm: 'Scrypt', hashrate: 9.5e9, power: 3400 },
-            { id: 13, name: 'Antminer L7 Pro (11 GH/s)', algorithm: 'Scrypt', hashrate: 11e9, power: 3960 },
-            { id: 14, name: 'iPollo A1 Pro (1.54 TH/s)', algorithm: 'Scrypt', hashrate: 1.54e12, power: 4600 },
-            
-            { id: 15, name: 'Antminer Z15 Pro (840 kSol/s)', algorithm: 'Equihash', hashrate: 840e3, power: 2780 },
-            { id: 16, name: 'Antminer Z15 (420 kSol/s)', algorithm: 'Equihash', hashrate: 420e3, power: 1510 },
-            { id: 17, name: 'iPollo Z11+ (66 kSol/s)', algorithm: 'Equihash', hashrate: 66e3, power: 700 },
-            
-            { id: 18, name: 'Antminer X9 (1000 kH/s)', algorithm: 'KawPow', hashrate: 1000e3, power: 2472 },
-            { id: 19, name: 'Whatsminer WM0910 Pro (9.5 TH/s)', algorithm: 'SHA-256', hashrate: 9.5e12, power: 3210 },
-            { id: 20, name: 'iPollo V1 Ultra Lite (180 MH/s)', algorithm: 'Blake2b', hashrate: 180e6, power: 500 },
-            
-            { id: 21, name: 'Antminer S21 (200 TH/s)', algorithm: 'SHA-256', hashrate: 200e12, power: 3010 },
-            { id: 22, name: 'Antminer S21 Pro (234 TH/s)', algorithm: 'SHA-256', hashrate: 234e12, power: 3360 },
-            { id: 23, name: 'Whatsminer M75S (620 TH/s)', algorithm: 'SHA-256', hashrate: 620e12, power: 6300 },
-            { id: 24, name: 'Whatsminer M78 (78 TH/s)', algorithm: 'SHA-256', hashrate: 78e12, power: 2520 },
-            { id: 25, name: 'Canaan AvalonMiner A1366 Pro (366 TH/s)', algorithm: 'SHA-256', hashrate: 366e12, power: 3400 },
-            
-            { id: 26, name: 'Antminer T19 (84 TH/s)', algorithm: 'SHA-256', hashrate: 84e12, power: 2290 },
-            { id: 27, name: 'Antminer T17e (40 TH/s)', algorithm: 'SHA-256', hashrate: 40e12, power: 2200 },
-            { id: 28, name: 'Whatsminer M72S (72 TH/s)', algorithm: 'SHA-256', hashrate: 72e12, power: 2720 },
-            { id: 29, name: 'iPollo G1 Mini (10 TH/s)', algorithm: 'SHA-256', hashrate: 10e12, power: 900 },
-            { id: 30, name: 'Whatsminer M76 (76 TH/s)', algorithm: 'SHA-256', hashrate: 76e12, power: 2520 },
-        ];
-
-        // Initialize
-        async function init() {
-            console.log('Initializing MinerPrices...');
-            await fetchPrices();
-            
-            // Load miners into memory
-            allMiners = MINERS_DATABASE.map(m => ({
-                ...m,
-                hashrateFormatted: formatHashrate(m.hashrate),
-                dailyProfit: 0,
-                monthlyProfit: 0,
-                yearlyProfit: 0
-            }));
-            
-            // Calculate profitability
-            recalculateProfits();
-            displayProfitabilityTable(allMiners);
-            updateStats();
-            document.getElementById('dataSource').textContent = '✓ Live Prices';
-            
-            // Update prices every 5 minutes
-            setInterval(fetchPrices, 300000);
-        }
-
-        // Fetch cryptocurrency prices
-        async function fetchPrices() {
+        async function loadMiners() {
             try {
-                const response = await fetch(
-                    `${COINGECKO_API}/simple/price?ids=bitcoin,litecoin,zcash&vs_currencies=usd`
-                );
-                const data = await response.json();
-                btcPrice = Math.round(data.bitcoin.usd);
-                ltcPrice = Math.round(data.litecoin.usd);
-                zcashPrice = Math.round(data.zcash.usd);
-                
-                document.getElementById('btcPrice').textContent = btcPrice.toLocaleString();
-                
-                // Recalculate with new prices
-                if (allMiners.length > 0) {
-                    recalculateProfits();
-                    displayProfitabilityTable(allMiners);
+                // Fetch miners from Supabase
+                const { data, error } = await supabase
+                    .from('miners')
+                    .select('*')
+                    .order('daily_profit', { ascending: false });
+
+                if (error) {
+                    throw error;
                 }
-                
-                updateTime();
-            } catch (e) {
-                console.log('Price fetch failed');
+
+                if (!data || data.length === 0) {
+                    document.getElementById('table-container').innerHTML = 
+                        '<div class="error">No miners in database. Please run the fetch script first.</div>';
+                    return;
+                }
+
+                // Update stats
+                document.getElementById('minerCount').textContent = data.length;
+                if (data[0]) {
+                    document.getElementById('topProfit').textContent = '$' + data[0].daily_profit.toFixed(2);
+                    document.getElementById('btcPrice').textContent = '$' + Math.round(data[0].btc_price);
+                    const updated = new Date(data[0].updated_at);
+                    document.getElementById('lastUpdate').textContent = updated.toLocaleTimeString();
+                }
+
+                // Create table
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Miner Name</th>
+                                <th>Algorithm</th>
+                                <th>Coin</th>
+                                <th>Hashrate</th>
+                                <th>Power (W)</th>
+                                <th>💰 Daily Profit</th>
+                                <th>Monthly</th>
+                                <th>Yearly</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.forEach((miner, i) => {
+                    html += `
+                        <tr>
+                            <td>#${i + 1}</td>
+                            <td>${miner.name}</td>
+                            <td>${miner.algorithm}</td>
+                            <td>${miner.coin}</td>
+                            <td>${formatHashrate(miner.hashrate)}</td>
+                            <td>${miner.power}</td>
+                            <td class="price">$${miner.daily_profit.toFixed(2)}</td>
+                            <td class="price">$${miner.monthly_profit.toFixed(2)}</td>
+                            <td class="price">$${miner.yearly_profit.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                document.getElementById('table-container').innerHTML = html;
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('table-container').innerHTML = 
+                    `<div class="error">Error loading miners: ${error.message}</div>`;
             }
         }
 
-        // Calculate daily profit based on algorithm
-        function calculateDailyProfit(hashrate, power, algorithm) {
-            let networkHashrate, reward, blockTime, coinPrice;
-            
-            if (algorithm === 'SHA-256') {
-                // Bitcoin - assume 650 EH/s network
-                networkHashrate = 650e18;
-                reward = 6.25;
-                blockTime = 600;
-                coinPrice = btcPrice;
-            } else if (algorithm === 'Scrypt') {
-                // Litecoin - assume 15 TH/s network
-                networkHashrate = 15e12;
-                reward = 12.5;
-                blockTime = 150;
-                coinPrice = ltcPrice;
-            } else if (algorithm === 'Equihash') {
-                // Zcash - assume 3 GH/s network
-                networkHashrate = 3e9;
-                reward = 3.125;
-                blockTime = 75;
-                coinPrice = zcashPrice;
-            } else {
-                // Conservative estimate for other algorithms
-                return power > 0 ? -((power / 1000) * 24 * ELECTRICITY_COST) : 0;
-            }
-            
-            const dailyCoins = (hashrate / networkHashrate) * (86400 / blockTime) * reward * 0.99; // 0.99 = pool fees
-            const revenue = dailyCoins * coinPrice;
-            const cost = (power / 1000) * 24 * ELECTRICITY_COST;
-            
-            return Math.max(revenue - cost, -(cost * 0.5)); // Don't show extreme negatives
-        }
-
-        // Recalculate all profits
-        function recalculateProfits() {
-            allMiners.forEach(m => {
-                m.dailyProfit = calculateDailyProfit(m.hashrate, m.power, m.algorithm);
-                m.monthlyProfit = m.dailyProfit * 30;
-                m.yearlyProfit = m.dailyProfit * 365;
-            });
-            
-            // Sort by daily profit
-            allMiners.sort((a, b) => b.dailyProfit - a.dailyProfit);
-        }
-
-        // Format hashrate
         function formatHashrate(hashrate) {
-            if (!hashrate) return 'N/A';
-            const ph = hashrate / 1e15;
-            if (ph >= 1) return ph.toFixed(2) + ' PH/s';
-            const th = hashrate / 1e12;
-            if (th >= 1) return th.toFixed(2) + ' TH/s';
-            const gh = hashrate / 1e9;
-            if (gh >= 1) return gh.toFixed(2) + ' GH/s';
-            const mh = hashrate / 1e6;
-            if (mh >= 1) return mh.toFixed(2) + ' MH/s';
-            const kh = hashrate / 1e3;
-            return kh.toFixed(2) + ' kH/s';
+            if (hashrate >= 1e15) return (hashrate / 1e15).toFixed(2) + ' PH/s';
+            if (hashrate >= 1e12) return (hashrate / 1e12).toFixed(2) + ' TH/s';
+            if (hashrate >= 1e9) return (hashrate / 1e9).toFixed(2) + ' GH/s';
+            if (hashrate >= 1e6) return (hashrate / 1e6).toFixed(2) + ' MH/s';
+            return hashrate.toFixed(2) + ' H/s';
         }
 
-        // Display profitability table
-        function displayProfitabilityTable(miners) {
-            const tbody = document.getElementById('minersTableBody');
-            
-            displayedMiners = miners.filter(m => 
-                (currentAlgoFilter === '' || m.algorithm === currentAlgoFilter) &&
-                m.name.toLowerCase().includes(document.getElementById('minerSearch').value.toLowerCase())
-            );
-            
-            // Apply sorting
-            if (currentSortBy === 'name') {
-                displayedMiners.sort((a, b) => a.name.localeCompare(b.name));
-            } else if (currentSortBy === 'hashrate') {
-                displayedMiners.sort((a, b) => b.hashrate - a.hashrate);
-            } else if (currentSortBy === 'daily') {
-                displayedMiners.sort((a, b) => b.dailyProfit - a.dailyProfit);
-            }
-            
-            tbody.innerHTML = displayedMiners.map((m, idx) => `
-                <tr>
-                    <td class="rank">#${idx + 1}</td>
-                    <td class="miner-name">${m.name}</td>
-                    <td><span class="algo-tag">${m.algorithm}</span></td>
-                    <td>${m.hashrateFormatted}</td>
-                    <td>${m.power}W</td>
-                    <td class="profit-daily">$${m.dailyProfit.toFixed(2)}</td>
-                    <td>$${m.monthlyProfit.toFixed(2)}</td>
-                    <td>$${m.yearlyProfit.toFixed(2)}</td>
-                </tr>
-            `).join('');
-        }
-
-        // Update stats
-        function updateStats() {
-            document.getElementById('minerCount').textContent = displayedMiners.length;
-            if (displayedMiners.length > 0) {
-                const topProfit = displayedMiners[0].dailyProfit;
-                const avgProfit = displayedMiners.reduce((a, b) => a + b.dailyProfit, 0) / displayedMiners.length;
-                document.getElementById('topProfit').textContent = '$' + topProfit.toFixed(2);
-                document.getElementById('avgProfit').textContent = '$' + avgProfit.toFixed(2);
-            }
-        }
-
-        // Update time
-        function updateTime() {
-            const now = new Date();
-            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-            document.getElementById('lastUpdate').textContent = time;
-        }
-
-        // Search miners
-        function searchMiners() {
-            displayProfitabilityTable(allMiners);
-            updateStats();
-        }
-
-        // Filter by algorithm
-        function filterByAlgo(algo) {
-            currentAlgoFilter = algo;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            displayProfitabilityTable(allMiners);
-            updateStats();
-        }
-
-        // Sort table
-        function sortTable(by) {
-            currentSortBy = by;
-            displayProfitabilityTable(allMiners);
-        }
-
-        // Initialize on load
-        window.addEventListener('load', init);
+        // Load on page load
+        window.addEventListener('load', loadMiners);
     </script>
-
 </body>
 </html>
