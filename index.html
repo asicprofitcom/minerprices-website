@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MinerPrices - ASIC Mining Profitability</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -97,6 +98,37 @@
             border-color: var(--primary);
             color: #000;
             transform: translateY(-2px);
+        }
+        
+        .auth-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .user-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 20px;
+        }
+        
+        .btn-auth {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
         }
         
         .container {
@@ -340,6 +372,38 @@
             color: var(--primary);
         }
         
+        /* AUTH MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .modal-content h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
         /* SEARCH */
         .search-box {
             margin-bottom: 20px;
@@ -352,15 +416,25 @@
             border: 2px solid var(--border);
         }
         
-        .auth-section {
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 15px;
             display: flex;
-            gap: 10px;
             align-items: center;
+            gap: 10px;
         }
         
-        .user-info {
-            font-size: 12px;
-            color: var(--text-secondary);
+        .alert-success {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+        
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
         }
         
         @media (max-width: 768px) {
@@ -388,7 +462,42 @@
             </div>
             <div class="auth-section">
                 <span id="userStatus" class="user-info">Loading...</span>
+                <button id="authBtn" class="btn-auth" onclick="showAuthModal()">Sign In</button>
             </div>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-lock"></i> Sign In / Sign Up</h3>
+            <div id="authMessage"></div>
+            
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="authEmail" placeholder="your@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="authPassword" placeholder="••••••••">
+            </div>
+            
+            <button class="btn" onclick="handleSignUp()">
+                <i class="fas fa-user-plus"></i> Sign Up
+            </button>
+            
+            <button class="btn" onclick="handleSignIn()" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+            
+            <button class="btn" onclick="handleSignOut()" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </button>
+            
+            <button class="btn-auth" onclick="closeAuthModal()" style="width: 100%; margin-top: 15px; padding: 10px;">
+                Close
+            </button>
         </div>
     </div>
 
@@ -469,6 +578,7 @@
         <div id="portfolio" class="tab-content">
             <div class="card">
                 <h2><i class="fas fa-briefcase"></i> My Mining Portfolio</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Sign in to save your portfolio</p>
                 
                 <div class="grid-3" style="margin-bottom: 20px;">
                     <div class="form-group">
@@ -525,13 +635,19 @@
     </div>
 
     <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_s5ocl3sDwpefFYuw3V-JEQ_FQzXGTHZ';
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
         // Configuration
         const API_URL = 'https://api.coingecko.com/api/v3';
         let btcPrice = 79900;
+        let currentUser = null;
 
-        // Miner Database (120+ miners with prices)
+        // Miner Database
         const miners = [
-            // Bitcoin Miners
             { id: 1, name: 'Antminer S21 Pro', hash: 210, power: 3425, price: 5200, coin: 'BTC', emoji: '⛏️' },
             { id: 2, name: 'Antminer S21', hash: 200, power: 3360, price: 4900, coin: 'BTC', emoji: '⛏️' },
             { id: 3, name: 'Whatsminer M50S', hash: 126, power: 3276, price: 3000, coin: 'BTC', emoji: '⛏️' },
@@ -540,17 +656,11 @@
             { id: 6, name: 'Whatsminer M30S++', hash: 86, power: 3550, price: 1700, coin: 'BTC', emoji: '⛏️' },
             { id: 7, name: 'Antminer T21', hash: 42, power: 3500, price: 1800, coin: 'BTC', emoji: '⛏️' },
             { id: 8, name: 'Iceriver KS0', hash: 210, power: 3268, price: 4500, coin: 'BTC', emoji: '⛏️' },
-            
-            // Litecoin Miners
             { id: 9, name: 'Antminer L7', hash: 9500, power: 3425, price: 8000, coin: 'LTC', emoji: '⚙️' },
             { id: 10, name: 'Whatsminer LM10S', hash: 6800, power: 2200, price: 5000, coin: 'LTC', emoji: '⚙️' },
             { id: 11, name: 'Antminer L6', hash: 504, power: 1350, price: 2500, coin: 'LTC', emoji: '⚙️' },
-            
-            // Kaspa Miners
             { id: 12, name: 'Iceriver KS3', hash: 25.5, power: 3450, price: 3000, coin: 'Kaspa', emoji: '💎' },
             { id: 13, name: 'Iceriver KS2', hash: 8, power: 1200, price: 1500, coin: 'Kaspa', emoji: '💎' },
-            
-            // More miners...
             { id: 14, name: 'Canaan Avalonminer A1246', hash: 95, power: 3600, price: 1600, coin: 'BTC', emoji: '⛏️' },
             { id: 15, name: 'Innosilicon A10 Pro', hash: 6000, power: 3010, price: 4500, coin: 'LTC', emoji: '⚙️' },
         ];
@@ -559,13 +669,109 @@
         let selectedMiner = null;
 
         // Initialize
-        function init() {
+        async function init() {
             fetchBTCPrice();
             populateMiners();
             populateSelectors();
             populatePricesTable();
-            updateUserStatus();
+            checkAuth();
             setInterval(fetchBTCPrice, 300000);
+        }
+
+        // Check Authentication
+        async function checkAuth() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    currentUser = session.user;
+                    updateAuthStatus(currentUser.email);
+                } else {
+                    updateAuthStatus(null);
+                }
+            } catch (e) {
+                console.log('Auth check:', e.message);
+                updateAuthStatus(null);
+            }
+        }
+
+        // Update Auth Status
+        function updateAuthStatus(email) {
+            const btn = document.getElementById('authBtn');
+            const status = document.getElementById('userStatus');
+            
+            if (email) {
+                status.textContent = `✅ Logged in: ${email}`;
+                btn.textContent = '🔓 Sign Out';
+                btn.onclick = handleSignOut;
+            } else {
+                status.textContent = '❌ Not signed in';
+                btn.textContent = '🔒 Sign In';
+                btn.onclick = showAuthModal;
+            }
+        }
+
+        // Auth Modal
+        function showAuthModal() {
+            document.getElementById('authModal').classList.add('active');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.remove('active');
+        }
+
+        // Sign Up
+        async function handleSignUp() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            
+            if (!email || !password) return showMessage('Fill all fields', 'error');
+            
+            try {
+                const { error } = await supabase.auth.signUp({ email, password });
+                if (error) throw error;
+                showMessage('✅ Check your email to confirm signup!', 'success');
+                document.getElementById('authEmail').value = '';
+                document.getElementById('authPassword').value = '';
+            } catch (e) {
+                showMessage(`❌ ${e.message}`, 'error');
+            }
+        }
+
+        // Sign In
+        async function handleSignIn() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            
+            if (!email || !password) return showMessage('Fill all fields', 'error');
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                currentUser = data.session.user;
+                updateAuthStatus(currentUser.email);
+                closeAuthModal();
+                showMessage('✅ Signed in!', 'success');
+            } catch (e) {
+                showMessage(`❌ ${e.message}`, 'error');
+            }
+        }
+
+        // Sign Out
+        async function handleSignOut() {
+            try {
+                await supabase.auth.signOut();
+                currentUser = null;
+                updateAuthStatus(null);
+                closeAuthModal();
+                showMessage('✅ Signed out!', 'success');
+            } catch (e) {
+                showMessage(`❌ ${e.message}`, 'error');
+            }
+        }
+
+        function showMessage(msg, type) {
+            const div = document.getElementById('authMessage');
+            div.innerHTML = `<div class="alert alert-${type}"><i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i> ${msg}</div>`;
         }
 
         // Fetch Bitcoin Price
@@ -650,8 +856,7 @@
             const power = parseFloat(document.getElementById('calcPower').value);
             const elec = parseFloat(document.getElementById('calcElec').value);
             
-            // Simplified calculation (BTC)
-            const dailyCoins = (hash / 200) * 0.8; // Rough estimation
+            const dailyCoins = (hash / 200) * 0.8;
             const dailyUSD = dailyCoins * btcPrice;
             const costUSD = (power / 1000) * 24 * elec;
             const profitDaily = dailyUSD - costUSD;
@@ -660,7 +865,6 @@
             document.getElementById('resultMonth').textContent = '$' + (profitDaily * 30).toFixed(2);
             document.getElementById('resultYear').textContent = '$' + (profitDaily * 365).toFixed(2);
             
-            // Info
             const efficiency = (power / hash).toFixed(2);
             const payback = (selectedMiner.price / (profitDaily * 30)).toFixed(1);
             const roi = ((profitDaily * 365 / selectedMiner.price) * 100).toFixed(1);
@@ -725,11 +929,6 @@
                     <td>${(m.power / m.hash).toFixed(2)} W/TH</td>
                 </tr>
             `).join('');
-        }
-
-        // User Status
-        function updateUserStatus() {
-            document.getElementById('userStatus').textContent = '✅ Ready to use';
         }
 
         // Tab Switching
