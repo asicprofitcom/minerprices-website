@@ -248,8 +248,9 @@
             `;
             
             miners.forEach((miner, i) => {
+                const minerSlug = (miner.slug || miner.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
                 html += `
-                    <tr>
+                    <tr style="cursor: pointer;" onclick="window.location.href='/miner.html?slug=${minerSlug}'">
                         <td class="rank">#${i + 1}</td>
                         <td><strong>${miner.name}</strong></td>
                         <td><span class="algo-tag">${miner.algorithm}</span></td>
