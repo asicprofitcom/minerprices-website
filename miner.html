@@ -475,6 +475,25 @@
             }
         }
 
+        // Miner image URLs from obeminers.com and other sources
+        const minerImageMap = {
+          'Antminer Z15 Pro': 'https://obeminers.com/cdn/shop/products/z15pro_600x.jpg',
+          'Antminer Z15': 'https://obeminers.com/cdn/shop/products/z15_600x.jpg',
+          'Antminer S23 Hyd 3U': 'https://obeminers.com/cdn/shop/products/s23hyd3u_600x.jpg',
+          'Whatsminer M79S': 'https://obeminers.com/cdn/shop/products/m79s_600x.jpg',
+          'Antminer L7': 'https://obeminers.com/cdn/shop/products/l7_600x.jpg',
+          'Antminer S19 Pro Hyd': 'https://obeminers.com/cdn/shop/products/s19prohyd_600x.jpg',
+          'Antminer S19 Pro': 'https://obeminers.com/cdn/shop/products/s19pro_600x.jpg',
+          'Antminer S19': 'https://obeminers.com/cdn/shop/products/s19_600x.jpg',
+          'Antminer T19': 'https://obeminers.com/cdn/shop/products/t19_600x.jpg',
+          'Antminer A11 Pro': 'https://obeminers.com/cdn/shop/products/a11pro_600x.jpg',
+          'Antminer D7': 'https://obeminers.com/cdn/shop/products/d7_600x.jpg',
+          'Whatsminer M21S': 'https://obeminers.com/cdn/shop/products/m21s_600x.jpg',
+          'Whatsminer M30S++': 'https://obeminers.com/cdn/shop/products/m30splus_600x.jpg',
+          'Innosilicon A11 Pro': 'https://obeminers.com/cdn/shop/products/innosilicon_a11pro_600x.jpg',
+          'AvalonMiner 1246': 'https://obeminers.com/cdn/shop/products/avalon1246_600x.jpg',
+        };
+
         function renderMiner(miner) {
             const profitText = miner.daily_profit_latest ? 
                 `$${miner.daily_profit_latest.toFixed(2)}/day` : 
@@ -483,10 +502,13 @@
             const sellers = miner.seller_miners || [];
             const coins = miner.miner_coins || [];
             
+            // Get image from map or database
+            const imageUrl = minerImageMap[miner.name] || miner.image_url;
+            
             let html = `
                 <div class="miner-hero">
                     <div class="miner-image">
-                        ${miner.image_url ? `<img src="${miner.image_url}" alt="${miner.name}" style="max-width: 100%; max-height: 100%;">` : '⛏️'}
+                        ${imageUrl ? `<img src="${imageUrl}" alt="${miner.name}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` : '<div style="font-size: 100px; text-align: center; padding: 40px;">⛏️</div>'}
                     </div>
                     <div class="miner-info">
                         <h1>${miner.name}</h1>
