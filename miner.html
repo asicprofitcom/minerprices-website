@@ -372,20 +372,15 @@
 
         async function loadMiner() {
             try {
-                // Get slug from URL
-                const slug = new URLSearchParams(window.location.search).get('slug') 
-                    || window.location.pathname.split('/').pop();
+                // Get miner ID from URL (fallback to first miner for demo)
+                const minerId = new URLSearchParams(window.location.search).get('id') 
+                    || new URLSearchParams(window.location.search).get('slug')
+                    || '1'; // Default to first miner if no ID provided
                 
-                if (!slug) {
-                    document.getElementById('content').innerHTML = 
-                        '<div class="error">No miner selected</div>';
-                    return;
-                }
+                console.log('Loading miner:', minerId);
                 
-                console.log('Loading miner:', slug);
-                
-                // Fetch miner with sellers
-                const { data: miner, error: minerError } = await supabase
+                // Fetch miner with sellers (try by ID or slug)
+                let query = supabase
                     .from('miners')
                     .select(`
                         *,
@@ -403,20 +398,74 @@
                             coin_id,
                             coins (id, name, current_price, price_change_24h)
                         )
-                    `)
-                    .eq('slug', slug)
+                    `);
+                
+                // Try to match by ID first, then by slug
+                let { data: miner, error: minerError } = await query
+                    .eq('id', parseInt(minerId))
                     .single();
                 
-                if (minerError) {
-                    throw minerError;
+                if (minerError && !minerId.includes('-')) {
+                    // If ID didn't work and it's not a slug pattern, try as slug
+                    const { data: m, error: e } = await supabase
+                        .from('miners')
+                        .select(`
+                            *,
+                            seller_miners (
+                                id,
+                                seller_id,
+                                purchase_price,
+                                shipping_cost,
+                                total_price,
+                                in_stock,
+                                shop_url,
+                                sellers (id, name, logo_url, country)
+                            ),
+                            miner_coins (
+                                coin_id,
+                                coins (id, name, current_price, price_change_24h)
+                            )
+                        `)
+                        .eq('slug', minerId)
+                        .single();
+                    
+                    miner = m;
+                    minerError = e;
+                }
+                
+                // If still not found and ID is numeric, fetch any miner
+                if (minerError && !miner && minerId === '1') {
+                    const { data: m } = await supabase
+                        .from('miners')
+                        .select(`
+                            *,
+                            seller_miners (
+                                id,
+                                seller_id,
+                                purchase_price,
+                                shipping_cost,
+                                total_price,
+                                in_stock,
+                                shop_url,
+                                sellers (id, name, logo_url, country)
+                            ),
+                            miner_coins (
+                                coin_id,
+                                coins (id, name, current_price, price_change_24h)
+                            )
+                        `)
+                        .limit(1)
+                        .single();
+                    miner = m;
                 }
                 
                 if (!miner) {
                     document.getElementById('content').innerHTML = 
-                        '<div class="error">Miner not found</div>';
+                        '<div class="error">Miner not found. Try: /miner.html?id=1</div>';
                     return;
                 }
                 
+                console.log('Loaded miner:', miner.name);
                 renderMiner(miner);
                 
             } catch (error) {
