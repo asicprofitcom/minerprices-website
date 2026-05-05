@@ -133,11 +133,17 @@
 
         async function loadMiners() {
             try {
+                console.log('Loading miners from Supabase...');
+                console.log('URL:', SUPABASE_URL);
+                console.log('Supabase object:', supabase);
+                
                 // Fetch miners from Supabase
                 const { data, error } = await supabase
                     .from('miners')
                     .select('*')
                     .order('daily_profit', { ascending: false });
+
+                console.log('Response - Data:', data, 'Error:', error);
 
                 if (error) {
                     throw error;
@@ -145,9 +151,12 @@
 
                 if (!data || data.length === 0) {
                     document.getElementById('table-container').innerHTML = 
-                        '<div class="error">No miners in database. Please run the fetch script first.</div>';
+                        '<div class="error">No miners in database (0 records found). Please run the fetch script.</div>';
+                    console.log('No data returned');
                     return;
                 }
+                
+                console.log('Loaded', data.length, 'miners');
 
                 // Update stats
                 document.getElementById('minerCount').textContent = data.length;
