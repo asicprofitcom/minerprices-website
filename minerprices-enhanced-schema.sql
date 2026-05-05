@@ -1,10 +1,54 @@
 -- ============================================================================
--- MINERPRICES ENHANCED DATABASE SCHEMA V2
+-- MINERPRICES ENHANCED DATABASE SCHEMA V2 - FIXED
 -- Professional Mining Marketplace with Vendors, Hosters, Advanced Features
 -- ============================================================================
 
 -- ============================================================================
--- 1. CORE REFERENCE TABLES
+-- 1. CREATE TYPES FIRST (ENUMS)
+-- ============================================================================
+
+CREATE TYPE IF NOT EXISTS vendor_status AS ENUM (
+    'pending_approval',
+    'approved',
+    'silver',
+    'gold',
+    'suspended',
+    'banned'
+);
+
+CREATE TYPE IF NOT EXISTS hoster_status AS ENUM (
+    'pending_approval',
+    'approved',
+    'silver',
+    'gold',
+    'suspended',
+    'banned'
+);
+
+CREATE TYPE IF NOT EXISTS cooling_type AS ENUM (
+    'air',
+    'hydro',
+    'immersion',
+    'other'
+);
+
+CREATE TYPE IF NOT EXISTS admin_action AS ENUM (
+    'vendor_approved',
+    'vendor_suspended',
+    'vendor_banned',
+    'vendor_level_changed',
+    'miner_edited',
+    'miner_deleted',
+    'coin_added',
+    'coin_visibility_changed',
+    'hosting_center_approved',
+    'message_sent',
+    'price_deleted',
+    'other'
+);
+
+-- ============================================================================
+-- 2. CORE REFERENCE TABLES (ALGORITHMS & COINS)
 -- ============================================================================
 
 -- Algorithms (SHA256, Scrypt, Equihash, etc.)
@@ -22,7 +66,7 @@ CREATE TABLE IF NOT EXISTS coins (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) UNIQUE NOT NULL,
     symbol VARCHAR(20) UNIQUE NOT NULL,
-    algorithm_id BIGINT REFERENCES algorithms(id),
+    algorithm_id BIGINT REFERENCES algorithms(id) ON DELETE SET NULL,
     description TEXT,
     logo_url TEXT,
     logo_auto_update BOOLEAN DEFAULT TRUE,
@@ -40,12 +84,12 @@ CREATE TABLE IF NOT EXISTS coins (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_coins_algorithm ON coins(algorithm_id);
-CREATE INDEX idx_coins_symbol ON coins(symbol);
-CREATE INDEX idx_coins_visible ON coins(visible);
+CREATE INDEX IF NOT EXISTS idx_coins_algorithm ON coins(algorithm_id);
+CREATE INDEX IF NOT EXISTS idx_coins_symbol ON coins(symbol);
+CREATE INDEX IF NOT EXISTS idx_coins_visible ON coins(visible);
 
 -- ============================================================================
--- 2. MINERS (PRODUCTS)
+-- 3. MINERS (PRODUCTS)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS miners (
@@ -53,8 +97,8 @@ CREATE TABLE IF NOT EXISTS miners (
     name VARCHAR(255) UNIQUE NOT NULL,
     slug VARCHAR(255) UNIQUE,
     description TEXT,
-    algorithm_id BIGINT REFERENCES algorithms(id),
-    primary_coin_id BIGINT REFERENCES coins(id),
+    algorithm_id BIGINT REFERENCES algorithms(id) ON DELETE SET NULL,
+    primary_coin_id BIGINT REFERENCES coins(id) ON DELETE SET NULL,
     
     -- Specifications
     hashrate BIGINT,
@@ -93,9 +137,9 @@ CREATE TABLE IF NOT EXISTS miners (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_miners_algorithm ON miners(algorithm_id);
-CREATE INDEX idx_miners_slug ON miners(slug);
-CREATE INDEX idx_miners_featured ON miners(featured);
+CREATE INDEX IF NOT EXISTS idx_miners_algorithm ON miners(algorithm_id);
+CREATE INDEX IF NOT EXISTS idx_miners_slug ON miners(slug);
+CREATE INDEX IF NOT EXISTS idx_miners_featured ON miners(featured);
 
 -- Miner Images (multiple per miner)
 CREATE TABLE IF NOT EXISTS miner_images (
@@ -109,7 +153,7 @@ CREATE TABLE IF NOT EXISTS miner_images (
     UNIQUE(miner_id, image_url)
 );
 
-CREATE INDEX idx_miner_images_miner ON miner_images(miner_id);
+CREATE INDEX IF NOT EXISTS idx_miner_images_miner ON miner_images(miner_id);
 
 -- Miner to Coin Mapping (many-to-many)
 CREATE TABLE IF NOT EXISTS miner_coins (
@@ -125,8 +169,8 @@ CREATE TABLE IF NOT EXISTS miner_coins (
     UNIQUE(miner_id, coin_id)
 );
 
-CREATE INDEX idx_miner_coins_miner ON miner_coins(miner_id);
-CREATE INDEX idx_miner_coins_coin ON miner_coins(coin_id);
+CREATE INDEX IF NOT EXISTS idx_miner_coins_miner ON miner_coins(miner_id);
+CREATE INDEX IF NOT EXISTS idx_miner_coins_coin ON miner_coins(coin_id);
 
 -- Price History (daily snapshots)
 CREATE TABLE IF NOT EXISTS miner_price_history (
@@ -142,7 +186,7 @@ CREATE TABLE IF NOT EXISTS miner_price_history (
     UNIQUE(miner_id, date)
 );
 
-CREATE INDEX idx_price_history_miner_date ON miner_price_history(miner_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_price_history_miner_date ON miner_price_history(miner_id, date DESC);
 
 -- Difficulty History (daily snapshots)
 CREATE TABLE IF NOT EXISTS coin_difficulty_history (
@@ -156,20 +200,11 @@ CREATE TABLE IF NOT EXISTS coin_difficulty_history (
     UNIQUE(coin_id, date)
 );
 
-CREATE INDEX idx_difficulty_history_coin_date ON coin_difficulty_history(coin_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_difficulty_history_coin_date ON coin_difficulty_history(coin_id, date DESC);
 
 -- ============================================================================
--- 3. VENDORS (SELLERS)
+-- 4. VENDORS (SELLERS)
 -- ============================================================================
-
-CREATE TYPE vendor_status AS ENUM (
-    'pending_approval',
-    'approved',
-    'silver',
-    'gold',
-    'suspended',
-    'banned'
-);
 
 CREATE TABLE IF NOT EXISTS vendors (
     id BIGSERIAL PRIMARY KEY,
@@ -203,10 +238,10 @@ CREATE TABLE IF NOT EXISTS vendors (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_vendors_slug ON vendors(slug);
-CREATE INDEX idx_vendors_status ON vendors(status);
-CREATE INDEX idx_vendors_country ON vendors(country);
-CREATE INDEX idx_vendors_featured ON vendors(featured);
+CREATE INDEX IF NOT EXISTS idx_vendors_slug ON vendors(slug);
+CREATE INDEX IF NOT EXISTS idx_vendors_status ON vendors(status);
+CREATE INDEX IF NOT EXISTS idx_vendors_country ON vendors(country);
+CREATE INDEX IF NOT EXISTS idx_vendors_featured ON vendors(featured);
 
 -- Vendor Photos (gallery)
 CREATE TABLE IF NOT EXISTS vendor_photos (
@@ -218,7 +253,7 @@ CREATE TABLE IF NOT EXISTS vendor_photos (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_vendor_photos_vendor ON vendor_photos(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_photos_vendor ON vendor_photos(vendor_id);
 
 -- Vendor Warehouses (up to 3)
 CREATE TABLE IF NOT EXISTS vendor_warehouses (
@@ -236,7 +271,7 @@ CREATE TABLE IF NOT EXISTS vendor_warehouses (
     UNIQUE(vendor_id, address)
 );
 
-CREATE INDEX idx_vendor_warehouses_vendor ON vendor_warehouses(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_warehouses_vendor ON vendor_warehouses(vendor_id);
 
 -- Vendor Listings (price per miner per vendor)
 CREATE TABLE IF NOT EXISTS vendor_listings (
@@ -274,30 +309,14 @@ CREATE TABLE IF NOT EXISTS vendor_listings (
     UNIQUE(vendor_id, miner_id)
 );
 
-CREATE INDEX idx_vendor_listings_vendor ON vendor_listings(vendor_id);
-CREATE INDEX idx_vendor_listings_miner ON vendor_listings(miner_id);
-CREATE INDEX idx_vendor_listings_active ON vendor_listings(active);
-CREATE INDEX idx_vendor_listings_price ON vendor_listings(total_price);
+CREATE INDEX IF NOT EXISTS idx_vendor_listings_vendor ON vendor_listings(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_listings_miner ON vendor_listings(miner_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_listings_active ON vendor_listings(active);
+CREATE INDEX IF NOT EXISTS idx_vendor_listings_price ON vendor_listings(total_price);
 
 -- ============================================================================
--- 4. HOSTING CENTERS
+-- 5. HOSTERS & HOSTING CENTERS
 -- ============================================================================
-
-CREATE TYPE hoster_status AS ENUM (
-    'pending_approval',
-    'approved',
-    'silver',
-    'gold',
-    'suspended',
-    'banned'
-);
-
-CREATE TYPE cooling_type AS ENUM (
-    'air',
-    'hydro',
-    'immersion',
-    'other'
-);
 
 CREATE TABLE IF NOT EXISTS hosters (
     id BIGSERIAL PRIMARY KEY,
@@ -319,9 +338,9 @@ CREATE TABLE IF NOT EXISTS hosters (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_hosters_slug ON hosters(slug);
-CREATE INDEX idx_hosters_status ON hosters(status);
-CREATE INDEX idx_hosters_verified ON hosters(verified);
+CREATE INDEX IF NOT EXISTS idx_hosters_slug ON hosters(slug);
+CREATE INDEX IF NOT EXISTS idx_hosters_status ON hosters(status);
+CREATE INDEX IF NOT EXISTS idx_hosters_verified ON hosters(verified);
 
 -- Hosting Centers (actual facilities)
 CREATE TABLE IF NOT EXISTS hosting_centers (
@@ -368,29 +387,14 @@ CREATE TABLE IF NOT EXISTS hosting_centers (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_hosting_centers_hoster ON hosting_centers(hoster_id);
-CREATE INDEX idx_hosting_centers_country ON hosting_centers(country);
-CREATE INDEX idx_hosting_centers_active ON hosting_centers(active);
-CREATE INDEX idx_hosting_centers_coords ON hosting_centers(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_hosting_centers_hoster ON hosting_centers(hoster_id);
+CREATE INDEX IF NOT EXISTS idx_hosting_centers_country ON hosting_centers(country);
+CREATE INDEX IF NOT EXISTS idx_hosting_centers_active ON hosting_centers(active);
+CREATE INDEX IF NOT EXISTS idx_hosting_centers_coords ON hosting_centers(latitude, longitude);
 
 -- ============================================================================
--- 5. ADMIN & MODERATION
+-- 6. ADMIN & MODERATION
 -- ============================================================================
-
-CREATE TYPE admin_action AS ENUM (
-    'vendor_approved',
-    'vendor_suspended',
-    'vendor_banned',
-    'vendor_level_changed',
-    'miner_edited',
-    'miner_deleted',
-    'coin_added',
-    'coin_visibility_changed',
-    'hosting_center_approved',
-    'message_sent',
-    'price_deleted',
-    'other'
-);
 
 CREATE TABLE IF NOT EXISTS admin_logs (
     id BIGSERIAL PRIMARY KEY,
@@ -404,9 +408,9 @@ CREATE TABLE IF NOT EXISTS admin_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_admin_logs_target ON admin_logs(target_type, target_id);
-CREATE INDEX idx_admin_logs_action ON admin_logs(action);
-CREATE INDEX idx_admin_logs_date ON admin_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_logs_target ON admin_logs(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_admin_logs_action ON admin_logs(action);
+CREATE INDEX IF NOT EXISTS idx_admin_logs_date ON admin_logs(created_at DESC);
 
 -- Messages from Admin to Vendor
 CREATE TABLE IF NOT EXISTS vendor_messages (
@@ -421,11 +425,11 @@ CREATE TABLE IF NOT EXISTS vendor_messages (
     read_at TIMESTAMP WITH TIME ZONE
 );
 
-CREATE INDEX idx_vendor_messages_vendor ON vendor_messages(vendor_id);
-CREATE INDEX idx_vendor_messages_read ON vendor_messages(read);
+CREATE INDEX IF NOT EXISTS idx_vendor_messages_vendor ON vendor_messages(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_messages_read ON vendor_messages(read);
 
 -- ============================================================================
--- 6. USER FEATURES
+-- 7. USER FEATURES
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS user_portfolios (
@@ -433,7 +437,7 @@ CREATE TABLE IF NOT EXISTS user_portfolios (
     user_email VARCHAR(255) NOT NULL,
     miner_id BIGINT NOT NULL REFERENCES miners(id) ON DELETE CASCADE,
     quantity INTEGER DEFAULT 1,
-    hosting_center_id BIGINT REFERENCES hosting_centers(id),
+    hosting_center_id BIGINT REFERENCES hosting_centers(id) ON DELETE SET NULL,
     purchase_price DECIMAL(15,4),
     purchase_date DATE,
     expected_daily_profit DECIMAL(15,4),
@@ -442,10 +446,10 @@ CREATE TABLE IF NOT EXISTS user_portfolios (
     UNIQUE(user_email, miner_id)
 );
 
-CREATE INDEX idx_user_portfolios_email ON user_portfolios(user_email);
+CREATE INDEX IF NOT EXISTS idx_user_portfolios_email ON user_portfolios(user_email);
 
 -- ============================================================================
--- 7. REVIEWS & RATINGS
+-- 8. REVIEWS & RATINGS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS vendor_reviews (
@@ -463,8 +467,8 @@ CREATE TABLE IF NOT EXISTS vendor_reviews (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_vendor_reviews_vendor ON vendor_reviews(vendor_id);
-CREATE INDEX idx_vendor_reviews_approved ON vendor_reviews(approved);
+CREATE INDEX IF NOT EXISTS idx_vendor_reviews_vendor ON vendor_reviews(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_reviews_approved ON vendor_reviews(approved);
 
 CREATE TABLE IF NOT EXISTS hosting_center_reviews (
     id BIGSERIAL PRIMARY KEY,
@@ -480,10 +484,10 @@ CREATE TABLE IF NOT EXISTS hosting_center_reviews (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_hosting_reviews_center ON hosting_center_reviews(hosting_center_id);
+CREATE INDEX IF NOT EXISTS idx_hosting_reviews_center ON hosting_center_reviews(hosting_center_id);
 
 -- ============================================================================
--- 8. PROFITABILITY CALCULATIONS
+-- 9. PROFITABILITY CALCULATIONS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS profitability_snapshots (
@@ -507,10 +511,10 @@ CREATE TABLE IF NOT EXISTS profitability_snapshots (
     UNIQUE(miner_id, coin_id, date)
 );
 
-CREATE INDEX idx_profitability_miner_date ON profitability_snapshots(miner_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_profitability_miner_date ON profitability_snapshots(miner_id, date DESC);
 
 -- ============================================================================
--- 9. SYSTEM TRACKING
+-- 10. SYSTEM TRACKING
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS update_logs (
@@ -527,11 +531,11 @@ CREATE TABLE IF NOT EXISTS update_logs (
     duration_seconds INTEGER
 );
 
-CREATE INDEX idx_update_logs_type ON update_logs(update_type);
-CREATE INDEX idx_update_logs_date ON update_logs(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_update_logs_type ON update_logs(update_type);
+CREATE INDEX IF NOT EXISTS idx_update_logs_date ON update_logs(started_at DESC);
 
 -- ============================================================================
--- 10. FUNCTIONS & TRIGGERS
+-- 11. FUNCTIONS & TRIGGERS
 -- ============================================================================
 
 -- Update modified timestamp
@@ -564,7 +568,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION calculate_efficiency()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.power_consumption > 0 THEN
+    IF NEW.power_consumption > 0 AND NEW.hashrate > 0 THEN
         NEW.efficiency = ROUND((NEW.power_consumption::DECIMAL / NEW.hashrate::DECIMAL) * 1000000, 4);
     END IF;
     RETURN NEW;
@@ -572,22 +576,25 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================================
--- TRIGGERS
+-- 12. TRIGGERS
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS update_miners_modified ON miners;
 CREATE TRIGGER update_miners_modified BEFORE UPDATE ON miners
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
+DROP TRIGGER IF EXISTS update_vendors_modified ON vendors;
 CREATE TRIGGER update_vendors_modified BEFORE UPDATE ON vendors
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
+DROP TRIGGER IF EXISTS update_vendors_listings_modified ON vendor_listings;
 CREATE TRIGGER update_vendors_listings_modified BEFORE UPDATE ON vendor_listings
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
+DROP TRIGGER IF EXISTS calculate_miner_efficiency ON miners;
 CREATE TRIGGER calculate_miner_efficiency BEFORE INSERT OR UPDATE ON miners
     FOR EACH ROW EXECUTE FUNCTION calculate_efficiency();
 
 -- ============================================================================
--- DATABASE SCHEMA COMPLETE
--- Ready for deployment to Supabase
+-- DATABASE SCHEMA COMPLETE - Ready for Supabase
 -- ============================================================================
