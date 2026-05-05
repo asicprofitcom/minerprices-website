@@ -1,0 +1,19 @@
+name = "minerprices-website"
+type = "javascript"
+account_id = ""
+workers_dev = true
+route = ""
+zone_id = ""
+
+[env.production]
+name = "minerprices-website"
+route = "minerprices.com/*"
+zone_id = ""
+
+[build]
+command = "echo 'No build needed'"
+cwd = "./"
+watch_paths = []
+
+[build.upload]
+format = "service-worker"

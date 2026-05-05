@@ -15,8 +15,8 @@
 const https = require('https');
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
-const SUPABASE_KEY = 'sb_secret_3td2axHwZP0Nk_UOQ0FbKA_KjhOm3-y';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY; // Set in .env file
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
