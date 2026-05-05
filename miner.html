@@ -475,23 +475,15 @@
             }
         }
 
-        // Miner image URLs from obeminers.com and other sources
+        // Miner image URLs - generated placeholder images
         const minerImageMap = {
-          'Antminer Z15 Pro': 'https://obeminers.com/cdn/shop/products/z15pro_600x.jpg',
-          'Antminer Z15': 'https://obeminers.com/cdn/shop/products/z15_600x.jpg',
-          'Antminer S23 Hyd 3U': 'https://obeminers.com/cdn/shop/products/s23hyd3u_600x.jpg',
-          'Whatsminer M79S': 'https://obeminers.com/cdn/shop/products/m79s_600x.jpg',
-          'Antminer L7': 'https://obeminers.com/cdn/shop/products/l7_600x.jpg',
-          'Antminer S19 Pro Hyd': 'https://obeminers.com/cdn/shop/products/s19prohyd_600x.jpg',
-          'Antminer S19 Pro': 'https://obeminers.com/cdn/shop/products/s19pro_600x.jpg',
-          'Antminer S19': 'https://obeminers.com/cdn/shop/products/s19_600x.jpg',
-          'Antminer T19': 'https://obeminers.com/cdn/shop/products/t19_600x.jpg',
-          'Antminer A11 Pro': 'https://obeminers.com/cdn/shop/products/a11pro_600x.jpg',
-          'Antminer D7': 'https://obeminers.com/cdn/shop/products/d7_600x.jpg',
-          'Whatsminer M21S': 'https://obeminers.com/cdn/shop/products/m21s_600x.jpg',
-          'Whatsminer M30S++': 'https://obeminers.com/cdn/shop/products/m30splus_600x.jpg',
-          'Innosilicon A11 Pro': 'https://obeminers.com/cdn/shop/products/innosilicon_a11pro_600x.jpg',
-          'AvalonMiner 1246': 'https://obeminers.com/cdn/shop/products/avalon1246_600x.jpg',
+          'Antminer Z15 Pro': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FFD700" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FFD700"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3EAntminer Z15 Pro%3C/text%3E%3C/svg%3E',
+          'Antminer Z15': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%2300D4FF" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%2300D4FF"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%2300D4FF" font-weight="bold"%3EAntminer Z15%3C/text%3E%3C/svg%3E',
+          'Antminer S23 Hyd 3U': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FF6B00" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FF6B00"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="300" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EAntminer S23%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EHyd 3U%3C/text%3E%3C/svg%3E',
+          'Whatsminer M79S': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FFB703" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FFB703"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3EWhatsminer M79S%3C/text%3E%3C/svg%3E',
+          'Antminer L7': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%2300FF00" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%2300FF00"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%2300FF00" font-weight="bold"%3EAntminer L7%3C/text%3E%3C/svg%3E',
+          'Antminer S19 Pro Hyd': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%239D4EDD" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%239D4EDD"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="300" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EAntminer S19 Pro%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EHyd%3C/text%3E%3C/svg%3E',
+          'Antminer S19 Pro': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FF6B00" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FF6B00"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3EAntminer S19 Pro%3C/text%3E%3C/svg%3E',
         };
 
         function renderMiner(miner) {
