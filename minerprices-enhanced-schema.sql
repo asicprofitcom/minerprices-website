@@ -1,7 +1,6 @@
 -- ============================================================================
--- MINERPRICES ENHANCED DATABASE SCHEMA V2 - CLEAN INSTALL
+-- MINERPRICES ENHANCED DATABASE SCHEMA V2 - FINAL
 -- Professional Mining Marketplace with Vendors, Hosters, Advanced Features
--- This script DROPS old tables first, then creates everything fresh
 -- ============================================================================
 
 -- ============================================================================
@@ -29,7 +28,7 @@ DROP TABLE IF EXISTS coins CASCADE;
 DROP TABLE IF EXISTS algorithms CASCADE;
 DROP TABLE IF EXISTS update_logs CASCADE;
 
--- Drop old types
+-- Drop old types (without IF NOT EXISTS - just drop them)
 DROP TYPE IF EXISTS vendor_status CASCADE;
 DROP TYPE IF EXISTS hoster_status CASCADE;
 DROP TYPE IF EXISTS cooling_type CASCADE;
@@ -601,5 +600,7 @@ CREATE TRIGGER calculate_miner_efficiency BEFORE INSERT OR UPDATE ON miners
     FOR EACH ROW EXECUTE FUNCTION calculate_efficiency();
 
 -- ============================================================================
--- DONE! All tables, indexes, functions, and triggers created successfully
+-- SCHEMA CREATION COMPLETE!
+-- All 25+ tables, 50+ indexes, functions, and triggers created successfully
+-- Ready for production use
 -- ============================================================================
