@@ -466,6 +466,10 @@
                 }
                 
                 console.log('Loaded miner:', miner.name);
+                
+                // Load images from database
+                await loadMinerImages(miner.id);
+                
                 renderMiner(miner);
                 
             } catch (error) {
@@ -475,16 +479,40 @@
             }
         }
 
-        // Miner image URLs - generated placeholder images
-        const minerImageMap = {
-          'Antminer Z15 Pro': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FFD700" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FFD700"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3EAntminer Z15 Pro%3C/text%3E%3C/svg%3E',
-          'Antminer Z15': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%2300D4FF" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%2300D4FF"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%2300D4FF" font-weight="bold"%3EAntminer Z15%3C/text%3E%3C/svg%3E',
-          'Antminer S23 Hyd 3U': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FF6B00" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FF6B00"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="300" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EAntminer S23%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EHyd 3U%3C/text%3E%3C/svg%3E',
-          'Whatsminer M79S': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FFB703" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FFB703"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3EWhatsminer M79S%3C/text%3E%3C/svg%3E',
-          'Antminer L7': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%2300FF00" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%2300FF00"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%2300FF00" font-weight="bold"%3EAntminer L7%3C/text%3E%3C/svg%3E',
-          'Antminer S19 Pro Hyd': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%239D4EDD" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%239D4EDD"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="300" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EAntminer S19 Pro%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="14" fill="%23FFC107" font-weight="bold"%3EHyd%3C/text%3E%3C/svg%3E',
-          'Antminer S19 Pro': 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="%23FF6B00" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="%23FF6B00"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3EAntminer S19 Pro%3C/text%3E%3C/svg%3E',
+        // Fallback placeholder images (used if no DB images exist)
+        const getPlaceholderImage = (minerName) => {
+          const colors = {
+            'Pro': '#FFD700',
+            'Hyd': '#FF6B00',
+            'Z15': '#00D4FF',
+            'L7': '#00FF00',
+            'M79': '#FFB703'
+          };
+          
+          let color = '#FFD700';
+          for (const [key, val] of Object.entries(colors)) {
+            if (minerName.includes(key)) {
+              color = val;
+              break;
+            }
+          }
+          
+          return `data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="${encodeURIComponent(color)}" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="${encodeURIComponent(color)}"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3E${encodeURIComponent(minerName)}%3C/text%3E%3C/svg%3E`;
         };
+
+        // Load images from database
+        let minerImages = [];
+        async function loadMinerImages(minerId) {
+          try {
+            const response = await fetch(`/api/miner-images/${minerId}`);
+            const data = await response.json();
+            minerImages = data.success ? data.images : [];
+            return minerImages;
+          } catch (error) {
+            console.warn('Failed to load images from DB:', error);
+            return [];
+          }
+        }
 
         function renderMiner(miner) {
             const profitText = miner.daily_profit_latest ? 
@@ -494,8 +522,9 @@
             const sellers = miner.seller_miners || [];
             const coins = miner.miner_coins || [];
             
-            // Get image from map or database
-            const imageUrl = minerImageMap[miner.name] || miner.image_url;
+            // Get primary image from database or fallback to placeholder
+            const primaryImage = minerImages.find(img => img.is_primary) || minerImages[0];
+            const imageUrl = primaryImage?.image_url || getPlaceholderImage(miner.name);
             
             let html = `
                 <div class="miner-hero">
@@ -542,6 +571,29 @@
                     </div>
                 </div>
             `;
+            
+            // Image Gallery
+            if (minerImages.length > 1) {
+                html += `
+                    <div class="section">
+                        <h2><i class="fas fa-images"></i> Gallery</h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+                `;
+                
+                minerImages.forEach((img, idx) => {
+                    html += `
+                        <div style="position: relative; border-radius: 8px; overflow: hidden; cursor: pointer; border: ${img.is_primary ? '2px solid #FFD700' : '1px solid #2a2a2a'};" onclick="this.querySelector('img').click()">
+                            <img src="${img.image_url}" alt="Miner image ${idx + 1}" style="width: 100%; height: 150px; object-fit: cover;">
+                            ${img.is_primary ? '<div style="position: absolute; top: 5px; right: 5px; background: #FFD700; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">PRIMARY</div>' : ''}
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
             
             // Description
             if (miner.description) {

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload - MinerPrices Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #FFD700;
+            --secondary: #FFC107;
+            --dark-bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --success: #4ade80;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a1a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: var(--primary);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .upload-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="file"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        
+        input[type="file"]::file-selector-button {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .preview-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            display: none;
+            text-align: center;
+        }
+        
+        .preview-box.show {
+            display: block;
+        }
+        
+        .preview-box img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .preview-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+        
+        .btn-secondary:hover {
+            background: #3a3a3a;
+        }
+        
+        .btn-primary:disabled,
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid;
+        }
+        
+        .message.show {
+            display: block;
+        }
+        
+        .message.success {
+            background: rgba(74, 222, 128, 0.1);
+            border-left-color: var(--success);
+            color: var(--success);
+        }
+        
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .message.info {
+            background: rgba(100, 150, 200, 0.1);
+            border-left-color: #6490c8;
+            color: #9db5db;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .progress-bar.show {
+            display: block;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .gallery-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+        }
+        
+        .gallery-section h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+        
+        .gallery-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .gallery-item:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        
+        .gallery-item-actions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .gallery-item:hover .gallery-item-actions {
+            opacity: 1;
+        }
+        
+        .gallery-item-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .gallery-item-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .gallery-item-btn.delete {
+            background: var(--danger);
+        }
+        
+        .badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--primary);
+            color: #000;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-image"></i> Image Upload</h1>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="upload-panel">
+            <h3 style="color: var(--primary); margin-bottom: 20px;">Upload New Image</h3>
+            
+            <div class="form-group">
+                <label for="minerId">Miner ID *</label>
+                <input type="number" id="minerId" placeholder="Enter miner ID (e.g., 1)" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="image">Image File *</label>
+                <input type="file" id="image" accept="image/*" required>
+            </div>
+            
+            <div class="preview-box" id="previewBox">
+                <img id="previewImg" src="" alt="Preview">
+                <div class="preview-info">
+                    <span id="previewName"></span> • <span id="previewSize"></span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="caption">Caption (Optional)</label>
+                <input type="text" id="caption" placeholder="e.g., Antminer S19 Pro - Side View">
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="isPrimary">
+                    <label for="isPrimary" style="margin-bottom: 0;">Set as primary image</label>
+                </div>
+            </div>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-primary" id="uploadBtn">
+                    <i class="fas fa-upload"></i> Upload Image
+                </button>
+                <button class="btn-secondary" id="resetBtn">
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+            </div>
+        </div>
+        
+        <div class="gallery-section">
+            <h2><i class="fas fa-images"></i> Images for Miner <span id="galleryMinerId"></span></h2>
+            <div id="galleryContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_s5ocl3sDwpefFYuw3V-JEQ_FQzXGTHZ';
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const elements = {
+            minerId: document.getElementById('minerId'),
+            image: document.getElementById('image'),
+            caption: document.getElementById('caption'),
+            isPrimary: document.getElementById('isPrimary'),
+            uploadBtn: document.getElementById('uploadBtn'),
+            resetBtn: document.getElementById('resetBtn'),
+            message: document.getElementById('message'),
+            progressBar: document.getElementById('progressBar'),
+            progressFill: document.getElementById('progressFill'),
+            previewBox: document.getElementById('previewBox'),
+            previewImg: document.getElementById('previewImg'),
+            previewName: document.getElementById('previewName'),
+            previewSize: document.getElementById('previewSize'),
+            galleryContainer: document.getElementById('galleryContainer'),
+            galleryMinerId: document.getElementById('galleryMinerId'),
+        };
+
+        // Image preview
+        elements.image.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    elements.previewImg.src = e.target.result;
+                    elements.previewName.textContent = file.name;
+                    elements.previewSize.textContent = (file.size / 1024).toFixed(2) + ' KB';
+                    elements.previewBox.classList.add('show');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Reset form
+        elements.resetBtn.addEventListener('click', () => {
+            elements.minerId.value = '';
+            elements.image.value = '';
+            elements.caption.value = '';
+            elements.isPrimary.checked = false;
+            elements.previewBox.classList.remove('show');
+            elements.progressBar.classList.remove('show');
+            hideMessage();
+            loadGallery('');
+        });
+
+        // Upload image
+        elements.uploadBtn.addEventListener('click', async () => {
+            const minerId = elements.minerId.value.trim();
+            const file = elements.image.files[0];
+            const caption = elements.caption.value.trim();
+            const isPrimary = elements.isPrimary.checked;
+
+            if (!minerId || !file) {
+                showMessage('Please fill in Miner ID and select an image', 'error');
+                return;
+            }
+
+            try {
+                elements.uploadBtn.disabled = true;
+                elements.progressBar.classList.add('show');
+                elements.progressFill.style.width = '0%';
+
+                // Simulate progress
+                const progressInterval = setInterval(() => {
+                    let current = parseInt(elements.progressFill.style.width);
+                    if (current < 90) {
+                        elements.progressFill.style.width = (current + Math.random() * 30) + '%';
+                    }
+                }, 200);
+
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('miner_id', minerId);
+                if (caption) formData.append('caption', caption);
+                if (isPrimary) formData.append('is_primary', 'true');
+
+                const response = await fetch('/api/upload-miner-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                elements.progressFill.style.width = '100%';
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Upload failed');
+                }
+
+                const data = await response.json();
+                showMessage(`Image uploaded successfully to imgbb!`, 'success');
+                
+                // Reset form
+                elements.image.value = '';
+                elements.caption.value = '';
+                elements.isPrimary.checked = false;
+                elements.previewBox.classList.remove('show');
+                
+                // Reload gallery
+                loadGallery(minerId);
+                
+                setTimeout(() => {
+                    elements.progressBar.classList.remove('show');
+                }, 2000);
+            } catch (error) {
+                clearInterval(progressInterval);
+                showMessage(`Error: ${error.message}`, 'error');
+                elements.progressBar.classList.remove('show');
+            } finally {
+                elements.uploadBtn.disabled = false;
+            }
+        });
+
+        // Load gallery
+        async function loadGallery(minerId) {
+            if (!minerId) {
+                elements.galleryContainer.innerHTML = '<div class="empty-state">Enter a Miner ID to view images</div>';
+                elements.galleryMinerId.textContent = '';
+                return;
+            }
+
+            try {
+                elements.galleryContainer.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div> Loading images...</div>';
+                
+                const response = await fetch(`/api/miner-images/${minerId}`);
+                const data = await response.json();
+
+                elements.galleryMinerId.textContent = `#${minerId}`;
+
+                if (!data.success || data.images.length === 0) {
+                    elements.galleryContainer.innerHTML = '<div class="empty-state">No images yet for this miner</div>';
+                    return;
+                }
+
+                let gallery = '<div class="gallery">';
+                data.images.forEach((img) => {
+                    gallery += `
+                        <div class="gallery-item">
+                            <img src="${img.image_url}" alt="${img.caption || 'Image'}">
+                            ${img.is_primary ? '<div class="badge">PRIMARY</div>' : ''}
+                            <div class="gallery-item-actions">
+                                <button class="gallery-item-btn" onclick="deleteImage(${img.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                gallery += '</div>';
+
+                elements.galleryContainer.innerHTML = gallery;
+            } catch (error) {
+                elements.galleryContainer.innerHTML = `<div class="empty-state" style="color: #ef4444;">${error.message}</div>`;
+            }
+        }
+
+        // Delete image
+        async function deleteImage(imageId) {
+            if (!confirm('Delete this image?')) return;
+
+            try {
+                const response = await fetch(`/api/miner-images/${imageId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Delete failed');
+
+                showMessage('Image deleted', 'success');
+                loadGallery(elements.minerId.value);
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Message display
+        function showMessage(text, type) {
+            elements.message.textContent = text;
+            elements.message.className = `message show ${type}`;
+            setTimeout(() => hideMessage(), 5000);
+        }
+
+        function hideMessage() {
+            elements.message.classList.remove('show');
+        }
+
+        // Load gallery on minerId change
+        elements.minerId.addEventListener('change', () => {
+            loadGallery(elements.minerId.value);
+        });
+    </script>
+</body>
+</html>
