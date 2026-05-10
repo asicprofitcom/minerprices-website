@@ -2,8 +2,8 @@ name = "minerprices-website"
 type = "javascript"
 account_id = ""
 workers_dev = true
-route = ""
-zone_id = ""
+main = "src/index.js"
+compatibility_date = "2024-04-01"
 
 [env.production]
 name = "minerprices-website"
@@ -11,9 +11,12 @@ route = "minerprices.com/*"
 zone_id = ""
 
 [build]
-command = "echo 'No build needed'"
+command = "npm install"
 cwd = "./"
 watch_paths = []
 
 [build.upload]
-format = "service-worker"
+format = "modules"
+
+[compatibility_flags]
+nodejs_compat = true

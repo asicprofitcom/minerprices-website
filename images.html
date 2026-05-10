@@ -403,44 +403,104 @@
         // Upload
         document.getElementById('uploadBtn').addEventListener('click', async () => {
             const imageUrl = document.getElementById('imageUrl').value.trim();
+            const imageFile = document.getElementById('imageFile').files[0];
             const caption = document.getElementById('imageCaption').value.trim();
             const minerId = document.getElementById('minerId').value;
+            const selectedMinerName = document.getElementById('selectedMiner').textContent;
 
+            // Validation
             if (!minerId) {
-                showMessage('Please select a miner', 'error');
+                showMessage('❌ Please select a miner first', 'error');
                 return;
             }
 
-            if (!imageUrl) {
-                showMessage('Please paste imgbb URL', 'error');
+            if (!imageUrl && !imageFile) {
+                showMessage('❌ Please provide either an image URL or upload a file', 'error');
                 return;
+            }
+
+            // Validate image URL format
+            if (imageUrl && !isValidImageUrl(imageUrl)) {
+                showMessage('❌ Invalid image URL. Must be a valid HTTP/HTTPS URL', 'error');
+                return;
+            }
+
+            // Validate file if provided
+            if (imageFile) {
+                if (!isValidImageFile(imageFile)) {
+                    showMessage('❌ Invalid file. Please upload a valid image (JPG, PNG, GIF, WebP)', 'error');
+                    return;
+                }
             }
 
             try {
                 document.getElementById('uploadBtn').disabled = true;
+                showMessage('⏳ Processing...', 'success');
                 
+                const urlToUpload = imageUrl || await uploadToImgbb(imageFile);
+                
+                if (!urlToUpload) {
+                    throw new Error('Failed to get image URL');
+                }
+
                 const { data, error } = await supabase
                     .from('miner_images')
                     .insert({
                         miner_id: parseInt(minerId),
-                        image_url: imageUrl,
+                        image_url: urlToUpload,
                         caption: caption || null,
                         is_primary: false
                     })
                     .select();
                 
-                if (error) throw error;
+                if (error) {
+                    if (error.code === '23505') {
+                        showMessage('⚠️ This image URL is already in database for this miner', 'error');
+                    } else if (error.code === '23503') {
+                        showMessage('❌ Miner not found. Please select a valid miner', 'error');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
                 
-                showMessage('✅ Image added to database!', 'success');
+                showMessage(`✅ Image added to ${selectedMinerName}!`, 'success');
                 document.getElementById('imageUrl').value = '';
+                document.getElementById('imageFile').value = '';
                 document.getElementById('imageCaption').value = '';
+                await new Promise(r => setTimeout(r, 1000));
                 loadGallery();
             } catch (error) {
-                showMessage('Error: ' + error.message, 'error');
+                console.error('Upload error:', error);
+                showMessage('❌ Error: ' + (error.message || 'Unknown error'), 'error');
             } finally {
                 document.getElementById('uploadBtn').disabled = false;
             }
         });
+
+        // Helper: Validate image URL
+        function isValidImageUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+            } catch {
+                return false;
+            }
+        }
+
+        // Helper: Validate image file
+        function isValidImageFile(file) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            return validTypes.includes(file.type) && file.size <= maxSize;
+        }
+
+        // Helper: Upload file to imgbb (optional, for future enhancement)
+        async function uploadToImgbb(file) {
+            // This is a placeholder for future imgbb API integration
+            // For now, users must paste imgbb URLs
+            throw new Error('File upload to imgbb not yet implemented. Please upload to imgbb.com and paste the URL.');
+        }
 
         // Reset
         document.getElementById('resetBtn').addEventListener('click', () => {
@@ -455,6 +515,9 @@
         // Load gallery
         async function loadGallery() {
             try {
+                document.getElementById('galleryContainer').innerHTML = 
+                    '<div class="empty-state"><div class="loading"></div> Loading images...</div>';
+
                 const { data, error } = await supabase
                     .from('miner_images')
                     .select(`
@@ -462,32 +525,44 @@
                         image_url,
                         caption,
                         is_primary,
+                        created_at,
                         miners (id, name)
                     `)
+                    .order('is_primary', { ascending: false })
                     .order('created_at', { ascending: false })
-                    .limit(100);
+                    .limit(200);
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('Gallery load error:', error);
+                    document.getElementById('galleryContainer').innerHTML = 
+                        `<div class="empty-state">❌ Error loading gallery: ${error.message}</div>`;
+                    return;
+                }
 
                 if (!data || data.length === 0) {
                     document.getElementById('galleryContainer').innerHTML = 
-                        '<div class="empty-state">No images yet. Upload one to get started!</div>';
+                        '<div class="empty-state">📸 No images yet.<br>Upload one to get started!</div>';
                     return;
                 }
 
                 let html = '<div class="images-grid">';
                 data.forEach(img => {
+                    const minerName = img.miners?.name || 'Unknown Miner';
+                    const primaryBadge = img.is_primary ? '<div style="position:absolute;top:5px;right:5px;background:var(--primary);color:#000;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;">PRIMARY</div>' : '';
+                    
                     html += `
                         <div class="image-card">
-                            <img src="${img.image_url}" alt="Miner image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%231a1a1a%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2216%22%3EImage not found%3C/text%3E%3C/svg%3E'">
+                            ${primaryBadge}
+                            <img src="${escapeHtml(img.image_url)}" alt="${escapeHtml(minerName)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%231a1a1a%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2214%22%3E❌ Not Found%3C/text%3E%3C/svg%3E'">
                             <div class="image-card-info">
-                                <div class="miner-name">${img.miners?.name || 'Unknown'}</div>
-                                <div class="image-url">${img.image_url.substring(0, 40)}...</div>
+                                <div class="miner-name">${escapeHtml(minerName)}</div>
+                                <div class="image-url" title="${escapeHtml(img.image_url)}">${img.image_url.substring(0, 35)}...</div>
+                                ${img.caption ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;font-style:italic;">"${escapeHtml(img.caption)}"</div>` : ''}
                                 <div class="image-actions">
-                                    <button class="btn-small btn-copy" onclick="copyUrl('${img.image_url}')">
-                                        <i class="fas fa-copy"></i> Copy URL
+                                    <button class="btn-small btn-copy" onclick="copyUrl('${escapeHtml(img.image_url)}')">
+                                        <i class="fas fa-copy"></i> Copy
                                     </button>
-                                    <button class="btn-small btn-delete" onclick="deleteImage(${img.id})">
+                                    <button class="btn-small btn-delete" onclick="deleteImage(${img.id}, '${escapeHtml(minerName)}')">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -498,17 +573,32 @@
                 html += '</div>';
                 document.getElementById('galleryContainer').innerHTML = html;
             } catch (error) {
-                showMessage('Error loading gallery: ' + error.message, 'error');
+                console.error('Gallery error:', error);
+                showMessage('❌ Error loading gallery: ' + error.message, 'error');
             }
         }
 
-        function copyUrl(url) {
-            navigator.clipboard.writeText(url);
-            showMessage('✅ URL copied to clipboard!', 'success');
+        // Helper: Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
-        async function deleteImage(id) {
-            if (!confirm('Delete this image?')) return;
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    showMessage('✅ URL copied to clipboard!', 'success');
+                })
+                .catch(err => {
+                    console.error('Copy failed:', err);
+                    showMessage('❌ Failed to copy URL', 'error');
+                });
+        }
+
+        async function deleteImage(id, minerName = 'image') {
+            if (!confirm(`Delete this image from ${minerName}? This cannot be undone.`)) return;
             
             try {
                 const { error } = await supabase
@@ -517,10 +607,11 @@
                     .eq('id', id);
                 
                 if (error) throw error;
-                showMessage('✅ Image deleted!', 'success');
+                showMessage('✅ Image deleted successfully!', 'success');
                 loadGallery();
             } catch (error) {
-                showMessage('Error: ' + error.message, 'error');
+                console.error('Delete error:', error);
+                showMessage('❌ Error deleting image: ' + error.message, 'error');
             }
         }
 
@@ -528,11 +619,36 @@
             const msg = document.getElementById('message');
             msg.textContent = text;
             msg.className = `message show ${type}`;
-            setTimeout(() => msg.classList.remove('show'), 5000);
+            msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            const timeout = type === 'error' ? 8000 : 4000;
+            setTimeout(() => msg.classList.remove('show'), timeout);
         }
 
         // Initial load
-        loadMiners();
+        async function initPage() {
+            try {
+                // Test Supabase connection
+                const { data: testData, error: testError } = await supabase
+                    .from('miners')
+                    .select('count(*)', { count: 'exact' })
+                    .limit(1);
+
+                if (testError) {
+                    console.error('Supabase connection error:', testError);
+                    showMessage('⚠️ Database connection issue. Some features may not work.', 'error');
+                } else {
+                    console.log('✅ Database connected');
+                }
+
+                loadMiners();
+            } catch (error) {
+                console.error('Init error:', error);
+                showMessage('⚠️ Error initializing page', 'error');
+            }
+        }
+
+        initPage();
     </script>
 </body>
 </html>
