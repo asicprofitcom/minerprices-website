@@ -2,3 +2,8 @@
 daily-*.js
 fetch-*.js
 vendor-*.js
+.env
+.env.local
+CREDENTIALS.md
+node_modules/
+.DS_Store
