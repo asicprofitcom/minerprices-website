@@ -1,0 +1,4 @@
+*.html
+daily-*.js
+fetch-*.js
+vendor-*.js
