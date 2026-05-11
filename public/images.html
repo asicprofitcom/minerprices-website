@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery - MinerPrices Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #FFD700;
+            --dark-bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --success: #4ade80;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a1a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            font-size: 28px;
+        }
+        
+        .back-btn {
+            background: var(--border);
+            color: var(--text-primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: #3a3a3a;
+        }
+        
+        .upload-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        input[type="file"]::file-selector-button {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #FFC107);
+            color: #000;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text-primary);
+            flex: 1;
+        }
+        
+        .btn-secondary:hover {
+            background: #3a3a3a;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid;
+        }
+        
+        .message.show {
+            display: block;
+        }
+        
+        .message.success {
+            background: rgba(74, 222, 128, 0.1);
+            border-left-color: var(--success);
+            color: var(--success);
+        }
+        
+        .message.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .gallery {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 12px;
+        }
+        
+        .gallery h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .image-card {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+        
+        .image-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-5px);
+        }
+        
+        .image-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .image-card-info {
+            padding: 15px;
+        }
+        
+        .miner-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .image-url {
+            font-size: 11px;
+            color: var(--text-secondary);
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+        
+        .image-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-copy {
+            background: #4b5563;
+            color: white;
+            flex: 1;
+        }
+        
+        .btn-copy:hover {
+            background: #5a6474;
+        }
+        
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .miner-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .miner-option {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        
+        .miner-option:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-images"></i> Image Gallery Manager</h1>
+            <a href="/" class="back-btn">← Back to Home</a>
+        </div>
+        
+        <div id="message" class="message"></div>
+        
+        <div class="upload-section">
+            <h2>📤 Upload Image to imgbb</h2>
+            
+            <div class="form-group">
+                <label for="minerSelect">Select Miner *</label>
+                <input type="text" id="minerSearch" placeholder="Search miners..." style="margin-bottom: 10px;">
+                <div class="miner-list" id="minerList" style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; max-height: 200px; overflow-y: auto; display: none;"></div>
+                <input type="hidden" id="minerId">
+                <div id="selectedMiner" style="color: var(--text-secondary); margin-top: 5px;">No miner selected</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="imageFile">Image File *</label>
+                <input type="file" id="imageFile" accept="image/*" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="imageCaption">Image Caption (Optional)</label>
+                <input type="text" id="imageCaption" placeholder="e.g., Antminer S19 Pro - Front View">
+            </div>
+            
+            <div class="form-group">
+                <label for="imageUrl">Or paste imgbb URL directly</label>
+                <input type="text" id="imageUrl" placeholder="https://ibb.co/...">
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-primary" id="uploadBtn">
+                    <i class="fas fa-upload"></i> Upload & Save
+                </button>
+                <button class="btn-secondary" id="resetBtn">
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+            </div>
+        </div>
+        
+        <div class="gallery">
+            <h2><i class="fas fa-gallery"></i> All Images</h2>
+            <div id="galleryContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_s5ocl3sDwpefFYuw3V-JEQ_FQzXGTHZ';
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let allMiners = [];
+        let selectedMinerId = null;
+
+        // Load miners
+        async function loadMiners() {
+            try {
+                const { data, error } = await supabase
+                    .from('miners')
+                    .select('id, name')
+                    .order('name');
+                
+                if (error) throw error;
+                allMiners = data || [];
+                loadGallery();
+            } catch (error) {
+                showMessage('Error loading miners: ' + error.message, 'error');
+            }
+        }
+
+        // Miner search
+        document.getElementById('minerSearch').addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            const minerList = document.getElementById('minerList');
+            
+            if (!search) {
+                minerList.style.display = 'none';
+                return;
+            }
+            
+            const filtered = allMiners.filter(m => m.name.toLowerCase().includes(search));
+            minerList.innerHTML = filtered.map(m => 
+                `<div class="miner-option" onclick="selectMiner(${m.id}, '${m.name.replace(/'/g, "\\'")}')">
+                    ${m.name}
+                </div>`
+            ).join('');
+            minerList.style.display = 'block';
+        });
+
+        function selectMiner(id, name) {
+            selectedMinerId = id;
+            document.getElementById('minerId').value = id;
+            document.getElementById('selectedMiner').textContent = `✅ Selected: ${name}`;
+            document.getElementById('minerSearch').value = '';
+            document.getElementById('minerList').style.display = 'none';
+        }
+
+        // Upload
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const imageUrl = document.getElementById('imageUrl').value.trim();
+            const imageFile = document.getElementById('imageFile').files[0];
+            const caption = document.getElementById('imageCaption').value.trim();
+            const minerId = document.getElementById('minerId').value;
+            const selectedMinerName = document.getElementById('selectedMiner').textContent;
+
+            // Validation
+            if (!minerId) {
+                showMessage('❌ Please select a miner first', 'error');
+                return;
+            }
+
+            if (!imageUrl && !imageFile) {
+                showMessage('❌ Please provide either an image URL or upload a file', 'error');
+                return;
+            }
+
+            // Validate image URL format
+            if (imageUrl && !isValidImageUrl(imageUrl)) {
+                showMessage('❌ Invalid image URL. Must be a valid HTTP/HTTPS URL', 'error');
+                return;
+            }
+
+            // Validate file if provided
+            if (imageFile) {
+                if (!isValidImageFile(imageFile)) {
+                    showMessage('❌ Invalid file. Please upload a valid image (JPG, PNG, GIF, WebP)', 'error');
+                    return;
+                }
+            }
+
+            try {
+                document.getElementById('uploadBtn').disabled = true;
+                showMessage('⏳ Processing...', 'success');
+                
+                const urlToUpload = imageUrl || await uploadToImgbb(imageFile);
+                
+                if (!urlToUpload) {
+                    throw new Error('Failed to get image URL');
+                }
+
+                const { data, error } = await supabase
+                    .from('miner_images')
+                    .insert({
+                        miner_id: parseInt(minerId),
+                        image_url: urlToUpload,
+                        caption: caption || null,
+                        is_primary: false
+                    })
+                    .select();
+                
+                if (error) {
+                    if (error.code === '23505') {
+                        showMessage('⚠️ This image URL is already in database for this miner', 'error');
+                    } else if (error.code === '23503') {
+                        showMessage('❌ Miner not found. Please select a valid miner', 'error');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+                
+                showMessage(`✅ Image added to ${selectedMinerName}!`, 'success');
+                document.getElementById('imageUrl').value = '';
+                document.getElementById('imageFile').value = '';
+                document.getElementById('imageCaption').value = '';
+                await new Promise(r => setTimeout(r, 1000));
+                loadGallery();
+            } catch (error) {
+                console.error('Upload error:', error);
+                showMessage('❌ Error: ' + (error.message || 'Unknown error'), 'error');
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        });
+
+        // Helper: Validate image URL
+        function isValidImageUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+            } catch {
+                return false;
+            }
+        }
+
+        // Helper: Validate image file
+        function isValidImageFile(file) {
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            return validTypes.includes(file.type) && file.size <= maxSize;
+        }
+
+        // Helper: Upload file to imgbb (optional)
+        async function uploadToImgbb(file) {
+            // Not implemented - users paste imgbb URLs instead
+            throw new Error('File upload to imgbb not yet implemented. Please upload to imgbb.com and paste the URL.');
+        }
+
+        // Reset
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('imageUrl').value = '';
+            document.getElementById('imageCaption').value = '';
+            document.getElementById('minerSearch').value = '';
+            document.getElementById('minerId').value = '';
+            document.getElementById('selectedMiner').textContent = 'No miner selected';
+            document.getElementById('minerList').style.display = 'none';
+        });
+
+        // Load gallery
+        async function loadGallery() {
+            try {
+                document.getElementById('galleryContainer').innerHTML = 
+                    '<div class="empty-state"><div class="loading"></div> Loading images...</div>';
+
+                const { data, error } = await supabase
+                    .from('miner_images')
+                    .select(`
+                        id,
+                        image_url,
+                        caption,
+                        is_primary,
+                        created_at,
+                        miners (id, name)
+                    `)
+                    .order('is_primary', { ascending: false })
+                    .order('created_at', { ascending: false })
+                    .limit(200);
+                
+                if (error) {
+                    console.error('Gallery load error:', error);
+                    document.getElementById('galleryContainer').innerHTML = 
+                        `<div class="empty-state">❌ Error loading gallery: ${error.message}</div>`;
+                    return;
+                }
+
+                if (!data || data.length === 0) {
+                    document.getElementById('galleryContainer').innerHTML = 
+                        '<div class="empty-state">📸 No images yet.<br>Upload one to get started!</div>';
+                    return;
+                }
+
+                let html = '<div class="images-grid">';
+                data.forEach(img => {
+                    const minerName = img.miners?.name || 'Unknown Miner';
+                    const primaryBadge = img.is_primary ? '<div style="position:absolute;top:5px;right:5px;background:var(--primary);color:#000;padding:4px 8px;border-radius:4px;font-size:10px;font-weight:600;">PRIMARY</div>' : '';
+                    
+                    html += `
+                        <div class="image-card">
+                            ${primaryBadge}
+                            <img src="${escapeHtml(img.image_url)}" alt="${escapeHtml(minerName)}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%231a1a1a%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2214%22%3E❌ Not Found%3C/text%3E%3C/svg%3E'">
+                            <div class="image-card-info">
+                                <div class="miner-name">${escapeHtml(minerName)}</div>
+                                <div class="image-url" title="${escapeHtml(img.image_url)}">${img.image_url.substring(0, 35)}...</div>
+                                ${img.caption ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;font-style:italic;">"${escapeHtml(img.caption)}"</div>` : ''}
+                                <div class="image-actions">
+                                    <button class="btn-small btn-copy" onclick="copyUrl('${escapeHtml(img.image_url)}')">
+                                        <i class="fas fa-copy"></i> Copy
+                                    </button>
+                                    <button class="btn-small btn-delete" onclick="deleteImage(${img.id}, '${escapeHtml(minerName)}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                document.getElementById('galleryContainer').innerHTML = html;
+            } catch (error) {
+                console.error('Gallery error:', error);
+                showMessage('❌ Error loading gallery: ' + error.message, 'error');
+            }
+        }
+
+        // Helper: Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    showMessage('✅ URL copied to clipboard!', 'success');
+                })
+                .catch(err => {
+                    console.error('Copy failed:', err);
+                    showMessage('❌ Failed to copy URL', 'error');
+                });
+        }
+
+        async function deleteImage(id, minerName = 'image') {
+            if (!confirm(`Delete this image from ${minerName}? This cannot be undone.`)) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('miner_images')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                showMessage('✅ Image deleted successfully!', 'success');
+                loadGallery();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showMessage('❌ Error deleting image: ' + error.message, 'error');
+            }
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message show ${type}`;
+            msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            const timeout = type === 'error' ? 8000 : 4000;
+            setTimeout(() => msg.classList.remove('show'), timeout);
+        }
+
+        // Initial load
+        async function initPage() {
+            try {
+                // Test Supabase connection
+                const { data: testData, error: testError } = await supabase
+                    .from('miners')
+                    .select('count(*)', { count: 'exact' })
+                    .limit(1);
+
+                if (testError) {
+                    console.error('Supabase connection error:', testError);
+                    showMessage('⚠️ Database connection issue. Some features may not work.', 'error');
+                } else {
+                    console.log('✅ Database connected');
+                }
+
+                loadMiners();
+            } catch (error) {
+                console.error('Init error:', error);
+                showMessage('⚠️ Error initializing page', 'error');
+            }
+        }
+
+        initPage();
+    </script>
+</body>
+</html>

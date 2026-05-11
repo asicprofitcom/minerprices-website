@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miner - MinerPrices</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #FFD700;
+            --secondary: #FFC107;
+            --dark-bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --success: #4ade80;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a1a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--card-bg) 0%, #0f0f0f 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            cursor: pointer;
+        }
+        
+        .nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-left: 30px;
+            transition: color 0.3s;
+        }
+        
+        .nav a:hover {
+            color: var(--primary);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .miner-hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 50px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .miner-image {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+        }
+        
+        .miner-info h1 {
+            color: var(--primary);
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .miner-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .meta-item {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            font-size: 13px;
+        }
+        
+        .meta-label {
+            color: var(--text-secondary);
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .meta-value {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .spec-item {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .spec-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .spec-value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .section h2 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .sellers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .seller-card {
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .seller-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.1);
+        }
+        
+        .seller-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .seller-logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .seller-name {
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .seller-location {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .price-section {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .price-row:last-child {
+            border-bottom: none;
+        }
+        
+        .price-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        .price-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .total-price {
+            font-size: 18px;
+            color: var(--success);
+            font-weight: 700;
+        }
+        
+        .buy-button {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        
+        .buy-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .coins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .coin-card {
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .coin-card:hover {
+            border-color: var(--primary);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .coin-name {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .coin-price {
+            font-size: 24px;
+            color: var(--success);
+            font-weight: 700;
+        }
+        
+        .coin-change {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .error {
+            background: var(--danger);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .miner-hero {
+                grid-template-columns: 1fr;
+            }
+            
+            .specs-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo" onclick="window.location.href='/'">⛏️ MinerPrices</div>
+            <div class="nav">
+                <a href="/">Home</a>
+                <a href="/#about">About</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_s5ocl3sDwpefFYuw3V-JEQ_FQzXGTHZ';
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadMiner() {
+            try {
+                // Get miner ID from URL (fallback to first miner for demo)
+                const minerId = new URLSearchParams(window.location.search).get('id') 
+                    || new URLSearchParams(window.location.search).get('slug')
+                    || '1'; // Default to first miner if no ID provided
+                
+                console.log('Loading miner:', minerId);
+                
+                // Fetch miner with sellers (try by ID or slug)
+                let query = supabase
+                    .from('miners')
+                    .select(`
+                        *,
+                        seller_miners (
+                            id,
+                            seller_id,
+                            purchase_price,
+                            shipping_cost,
+                            total_price,
+                            in_stock,
+                            shop_url,
+                            sellers (id, name, logo_url, country)
+                        ),
+                        miner_coins (
+                            coin_id,
+                            coins (id, name, current_price, price_change_24h)
+                        )
+                    `);
+                
+                // Try to match by ID first, then by slug
+                let { data: miner, error: minerError } = await query
+                    .eq('id', parseInt(minerId))
+                    .single();
+                
+                if (minerError && !minerId.includes('-')) {
+                    // If ID didn't work and it's not a slug pattern, try as slug
+                    const { data: m, error: e } = await supabase
+                        .from('miners')
+                        .select(`
+                            *,
+                            seller_miners (
+                                id,
+                                seller_id,
+                                purchase_price,
+                                shipping_cost,
+                                total_price,
+                                in_stock,
+                                shop_url,
+                                sellers (id, name, logo_url, country)
+                            ),
+                            miner_coins (
+                                coin_id,
+                                coins (id, name, current_price, price_change_24h)
+                            )
+                        `)
+                        .eq('slug', minerId)
+                        .single();
+                    
+                    miner = m;
+                    minerError = e;
+                }
+                
+                // If still not found and ID is numeric, fetch any miner
+                if (minerError && !miner && minerId === '1') {
+                    const { data: m } = await supabase
+                        .from('miners')
+                        .select(`
+                            *,
+                            seller_miners (
+                                id,
+                                seller_id,
+                                purchase_price,
+                                shipping_cost,
+                                total_price,
+                                in_stock,
+                                shop_url,
+                                sellers (id, name, logo_url, country)
+                            ),
+                            miner_coins (
+                                coin_id,
+                                coins (id, name, current_price, price_change_24h)
+                            )
+                        `)
+                        .limit(1)
+                        .single();
+                    miner = m;
+                }
+                
+                if (!miner) {
+                    document.getElementById('content').innerHTML = 
+                        '<div class="error">Miner not found. Try: /miner.html?id=1</div>';
+                    return;
+                }
+                
+                console.log('Loaded miner:', miner.name);
+                
+                // Load images from database
+                await loadMinerImages(miner.id);
+                
+                renderMiner(miner);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML = 
+                    `<div class="error">Error loading miner: ${error.message}</div>`;
+            }
+        }
+
+        // Fallback placeholder images (used if no DB images exist)
+        const getPlaceholderImage = (minerName) => {
+          const colors = {
+            'Pro': '#FFD700',
+            'Hyd': '#FF6B00',
+            'Z15': '#00D4FF',
+            'L7': '#00FF00',
+            'M79': '#FFB703'
+          };
+          
+          let color = '#FFD700';
+          for (const [key, val] of Object.entries(colors)) {
+            if (minerName.includes(key)) {
+              color = val;
+              break;
+            }
+          }
+          
+          return `data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%231a1a1a" width="400" height="400"/%3E%3Crect stroke="${encodeURIComponent(color)}" stroke-width="3" fill="none" x="10" y="10" width="380" height="380" rx="15"/%3E%3Ctext x="200" y="200" text-anchor="middle" font-size="80" fill="${encodeURIComponent(color)}"%3E⛏%EF%B8%8F%3C/text%3E%3Ctext x="200" y="320" text-anchor="middle" font-size="16" fill="%23FFC107" font-weight="bold"%3E${encodeURIComponent(minerName)}%3C/text%3E%3C/svg%3E`;
+        };
+
+        // Load images from database
+        let minerImages = [];
+        async function loadMinerImages(minerId) {
+          try {
+            const response = await fetch(`/api/miner-images/${minerId}`);
+            const data = await response.json();
+            minerImages = data.success ? data.images : [];
+            return minerImages;
+          } catch (error) {
+            console.warn('Failed to load images from DB:', error);
+            return [];
+          }
+        }
+
+        function renderMiner(miner) {
+            const profitText = miner.daily_profit_latest ? 
+                `$${miner.daily_profit_latest.toFixed(2)}/day` : 
+                'Calculating...';
+            
+            const sellers = miner.seller_miners || [];
+            const coins = miner.miner_coins || [];
+            
+            // Get primary image from database or fallback to placeholder
+            const primaryImage = minerImages.find(img => img.is_primary) || minerImages[0];
+            const imageUrl = primaryImage?.image_url || getPlaceholderImage(miner.name);
+            
+            let html = `
+                <div class="miner-hero">
+                    <div class="miner-image">
+                        ${imageUrl ? `<img src="${imageUrl}" alt="${miner.name}" style="max-width: 100%; max-height: 100%; object-fit: contain;">` : '<div style="font-size: 100px; text-align: center; padding: 40px;">⛏️</div>'}
+                    </div>
+                    <div class="miner-info">
+                        <h1>${miner.name}</h1>
+                        <div class="miner-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">Algorithm</span>
+                                <span class="meta-value">${miner.algorithm}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Coin</span>
+                                <span class="meta-value">${miner.coin}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Daily Profit</span>
+                                <span class="meta-value" style="color: #4ade80;">${profitText}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="specs-grid">
+                            <div class="spec-item">
+                                <div class="spec-label">Hash Rate</div>
+                                <div class="spec-value">${formatHashrate(miner.hashrate)}</div>
+                            </div>
+                            <div class="spec-item">
+                                <div class="spec-label">Power Consumption</div>
+                                <div class="spec-value">${miner.power} W</div>
+                            </div>
+                            <div class="spec-item">
+                                <div class="spec-label">Efficiency</div>
+                                <div class="spec-value">${(miner.efficiency || 0).toFixed(2)} W/TH</div>
+                            </div>
+                            ${miner.manufacturer ? `
+                            <div class="spec-item">
+                                <div class="spec-label">Manufacturer</div>
+                                <div class="spec-value">${miner.manufacturer}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Image Gallery
+            if (minerImages.length > 1) {
+                html += `
+                    <div class="section">
+                        <h2><i class="fas fa-images"></i> Gallery</h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
+                `;
+                
+                minerImages.forEach((img, idx) => {
+                    html += `
+                        <div style="position: relative; border-radius: 8px; overflow: hidden; cursor: pointer; border: ${img.is_primary ? '2px solid #FFD700' : '1px solid #2a2a2a'};" onclick="this.querySelector('img').click()">
+                            <img src="${img.image_url}" alt="Miner image ${idx + 1}" style="width: 100%; height: 150px; object-fit: cover;">
+                            ${img.is_primary ? '<div style="position: absolute; top: 5px; right: 5px; background: #FFD700; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">PRIMARY</div>' : ''}
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Description
+            if (miner.description) {
+                html += `
+                    <div class="section">
+                        <h2><i class="fas fa-info-circle"></i> Description</h2>
+                        <p>${miner.description}</p>
+                    </div>
+                `;
+            }
+            
+            // Profitability Chart
+            html += `
+                <div class="section">
+                    <h2><i class="fas fa-chart-line"></i> Profitability Over Time</h2>
+                    <div class="chart-container">
+                        <canvas id="profitChart"></canvas>
+                    </div>
+                </div>
+            `;
+            
+            // Where to Buy
+            if (sellers.length > 0) {
+                html += `
+                    <div class="section">
+                        <h2><i class="fas fa-shopping-cart"></i> Where to Buy (${sellers.length})</h2>
+                        <div class="sellers-grid">
+                `;
+                
+                sellers.forEach(sm => {
+                    const seller = sm.sellers;
+                    html += `
+                        <div class="seller-card">
+                            <div class="seller-header">
+                                ${seller.logo_url ? 
+                                    `<img src="${seller.logo_url}" alt="${seller.name}" style="width: 50px; height: 50px; border-radius: 8px;">` :
+                                    `<div class="seller-logo">${seller.name.substring(0, 2)}</div>`}
+                                <div>
+                                    <div class="seller-name">${seller.name}</div>
+                                    ${seller.country ? `<div class="seller-location">📍 ${seller.country}</div>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="price-section">
+                                <div class="price-row">
+                                    <span class="price-label">Price</span>
+                                    <span class="price-value">$${sm.purchase_price.toFixed(2)}</span>
+                                </div>
+                                <div class="price-row">
+                                    <span class="price-label">Shipping</span>
+                                    <span class="price-value">$${(sm.shipping_cost || 0).toFixed(2)}</span>
+                                </div>
+                                <div class="price-row" style="border: none; padding-top: 10px;">
+                                    <span class="price-label">Total</span>
+                                    <span class="total-price">$${sm.total_price.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+                                ${sm.in_stock ? '✅ In Stock' : '❌ Out of Stock'}
+                            </div>
+                            
+                            <a href="${sm.shop_url}" target="_blank" class="buy-button">
+                                🛒 View on Store
+                            </a>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="section">
+                        <h2><i class="fas fa-shopping-cart"></i> Where to Buy</h2>
+                        <p style="color: var(--text-secondary);">No sellers found yet</p>
+                    </div>
+                `;
+            }
+            
+            // Coins
+            if (coins.length > 0) {
+                html += `
+                    <div class="section">
+                        <h2><i class="fas fa-coins"></i> Coins You Can Mine</h2>
+                        <div class="coins-grid">
+                `;
+                
+                coins.forEach(mc => {
+                    const coin = mc.coins;
+                    const change = coin.price_change_24h || 0;
+                    const changeClass = change >= 0 ? 'success' : 'danger';
+                    
+                    html += `
+                        <div class="coin-card">
+                            <div class="coin-name">${coin.name}</div>
+                            <div class="coin-price">$${coin.current_price.toFixed(2)}</div>
+                            <div class="coin-change" style="color: ${change >= 0 ? '#4ade80' : '#ef4444'};">
+                                ${change >= 0 ? '+' : ''}${change.toFixed(2)}%
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('content').innerHTML = html;
+            
+            // Load profitability history chart
+            loadProfitabilityChart(miner.id);
+        }
+
+        async function loadProfitabilityChart(minerId) {
+            try {
+                const { data } = await supabase
+                    .from('profitability_history')
+                    .select('date, daily_profit')
+                    .eq('miner_id', minerId)
+                    .order('date', { ascending: true })
+                    .limit(30);
+                
+                if (data && data.length > 0) {
+                    const ctx = document.getElementById('profitChart');
+                    if (ctx) {
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.map(d => new Date(d.date).toLocaleDateString()),
+                                datasets: [{
+                                    label: 'Daily Profit ($)',
+                                    data: data.map(d => d.daily_profit),
+                                    borderColor: '#FFD700',
+                                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                                    tension: 0.4,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        labels: { color: '#fff' }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        ticks: { color: '#b0b0b0' },
+                                        grid: { color: '#2a2a2a' }
+                                    },
+                                    x: {
+                                        ticks: { color: '#b0b0b0' },
+                                        grid: { color: '#2a2a2a' }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.log('Chart error:', error.message);
+            }
+        }
+
+        function formatHashrate(hashrate) {
+            if (!hashrate) return 'N/A';
+            if (hashrate >= 1e15) return (hashrate / 1e15).toFixed(2) + ' PH/s';
+            if (hashrate >= 1e12) return (hashrate / 1e12).toFixed(2) + ' TH/s';
+            if (hashrate >= 1e9) return (hashrate / 1e9).toFixed(2) + ' GH/s';
+            if (hashrate >= 1e6) return (hashrate / 1e6).toFixed(2) + ' MH/s';
+            return hashrate.toFixed(2) + ' H/s';
+        }
+
+        window.addEventListener('load', loadMiner);
+    </script>
+</body>
+</html>

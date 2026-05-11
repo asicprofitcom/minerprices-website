@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard - MinerPrices</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #FFD700;
+            --secondary: #FFC107;
+            --dark-bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --success: #4ade80;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a1a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--card-bg) 0%, #0f0f0f 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #0f0f0f;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2);
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .miner-listing {
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .miner-info {
+            flex: 1;
+        }
+        
+        .miner-name {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .miner-price {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btns button {
+            padding: 6px 12px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .edit-btn {
+            background: #f59e0b;
+            color: #000;
+        }
+        
+        .delete-btn {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .success-message {
+            background: rgba(74, 222, 128, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">⛏️ MinerPrices Seller Dashboard</div>
+            <button onclick="logout()" style="padding: 8px 16px; background: var(--danger); border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: 600;">
+                Sign Out
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- REGISTER TAB -->
+        <div id="register-tab" class="tab-content active">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchSellerTab('register')">Register as Seller</button>
+                <button class="tab-btn" onclick="switchSellerTab('manage')">Manage My Listings</button>
+            </div>
+            
+            <div class="card">
+                <h2>Register Your Store</h2>
+                <form onsubmit="registerSeller(event)">
+                    <div id="registerMessage"></div>
+                    
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Store Name</label>
+                            <input type="text" id="storeName" placeholder="My Mining Store" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Website URL</label>
+                            <input type="url" id="websiteUrl" placeholder="https://mystore.com" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="email" placeholder="contact@mystore.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="phone" placeholder="+1234567890">
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Country</label>
+                            <input type="text" id="country" placeholder="United States" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Year Established</label>
+                            <input type="number" id="established" placeholder="2020" min="2000" max="2099">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Logo URL</label>
+                        <input type="url" id="logoUrl" placeholder="https://mystore.com/logo.png">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="description" placeholder="Tell us about your store..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Register Store
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- MANAGE TAB -->
+        <div id="manage-tab" class="tab-content">
+            <div class="tabs">
+                <button class="tab-btn" onclick="switchSellerTab('register')">Register as Seller</button>
+                <button class="tab-btn active" onclick="switchSellerTab('manage')">Manage My Listings</button>
+            </div>
+            
+            <div class="card">
+                <h2>My Miners For Sale</h2>
+                <button class="btn btn-primary" onclick="addMinerListing()" style="margin-bottom: 20px;">
+                    <i class="fas fa-plus"></i> Add Miner Listing
+                </button>
+                
+                <div id="myListings"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_s5ocl3sDwpefFYuw3V-JEQ_FQzXGTHZ';
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentSeller = null;
+
+        async function registerSeller(event) {
+            event.preventDefault();
+
+            const msgDiv = document.getElementById('registerMessage');
+            
+            try {
+                const sellerData = {
+                    name: document.getElementById('storeName').value,
+                    slug: document.getElementById('storeName').value.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                    website_url: document.getElementById('websiteUrl').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value || null,
+                    country: document.getElementById('country').value,
+                    established_year: parseInt(document.getElementById('established').value) || null,
+                    logo_url: document.getElementById('logoUrl').value || null,
+                    description: document.getElementById('description').value || null,
+                    verified: false,
+                    active: true
+                };
+
+                const { data, error } = await supabase
+                    .from('sellers')
+                    .insert([sellerData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                msgDiv.innerHTML = '<div class="success-message">✅ Store registered successfully! You can now add miner listings.</div>';
+                currentSeller = data;
+
+                // Clear form
+                event.target.reset();
+
+                setTimeout(() => {
+                    msgDiv.innerHTML = '';
+                    switchSellerTab('manage');
+                    loadMyListings();
+                }, 2000);
+
+            } catch (error) {
+                msgDiv.innerHTML = `<div style="color: var(--danger);">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        function switchSellerTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            if (tab === 'register') {
+                document.getElementById('register-tab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            } else {
+                document.getElementById('manage-tab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                loadMyListings();
+            }
+        }
+
+        async function loadMyListings() {
+            try {
+                if (!currentSeller) {
+                    // Try to load seller from localStorage
+                    const sellerId = localStorage.getItem('sellerId');
+                    if (!sellerId) {
+                        document.getElementById('myListings').innerHTML = '<p style="color: var(--text-secondary);">Please register your store first.</p>';
+                        return;
+                    }
+                    currentSeller = { id: sellerId };
+                }
+
+                const { data, error } = await supabase
+                    .from('seller_miners')
+                    .select(`
+                        id,
+                        purchase_price,
+                        shipping_cost,
+                        total_price,
+                        in_stock,
+                        shop_url,
+                        miners (id, name)
+                    `)
+                    .eq('seller_id', currentSeller.id);
+
+                if (error) throw error;
+
+                let html = '';
+                data?.forEach(listing => {
+                    html += `
+                        <div class="miner-listing">
+                            <div class="miner-info">
+                                <div class="miner-name">${listing.miners?.name || 'Unknown Miner'}</div>
+                                <div class="miner-price">
+                                    Price: <strong>$${listing.purchase_price.toFixed(2)}</strong> + Shipping: <strong>$${listing.shipping_cost.toFixed(2)}</strong> = <strong style="color: var(--primary);">$${listing.total_price.toFixed(2)}</strong>
+                                </div>
+                                <div class="miner-price">Status: ${listing.in_stock ? '✅ In Stock' : '❌ Out of Stock'}</div>
+                            </div>
+                            <div class="action-btns">
+                                <button class="edit-btn" onclick="editListing('${listing.id}')">Edit</button>
+                                <button class="delete-btn" onclick="deleteListing('${listing.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('myListings').innerHTML = html || '<p style="color: var(--text-secondary);">You haven\'t added any miners yet. Click "Add Miner Listing" to get started!</p>';
+
+            } catch (error) {
+                document.getElementById('myListings').innerHTML = `<p style="color: var(--danger);">Error loading listings: ${error.message}</p>`;
+            }
+        }
+
+        function addMinerListing() {
+            alert('Add Miner Listing feature coming soon! This will allow you to select miners and set your prices.');
+        }
+
+        function editListing(id) {
+            alert('Edit listing feature coming soon!');
+        }
+
+        async function deleteListing(id) {
+            if (confirm('Delete this listing?')) {
+                await supabase.from('seller_miners').delete().eq('id', id);
+                loadMyListings();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('sellerId');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

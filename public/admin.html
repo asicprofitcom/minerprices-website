@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - MinerPrices</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #FFD700;
+            --secondary: #FFC107;
+            --dark-bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --border: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --success: #4ade80;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1a1a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .container-main {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+        
+        /* SIDEBAR */
+        .sidebar {
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .sidebar-logo {
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .sidebar-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .sidebar-item:hover, .sidebar-item.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+        
+        /* MAIN CONTENT */
+        .main-content {
+            padding: 30px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            color: var(--primary);
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .tab-btn:hover, .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* CARDS */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            color: var(--primary);
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        /* FORMS */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #0f0f0f;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2);
+        }
+        
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        /* TABLES */
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 12px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        
+        tr:hover {
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btns button {
+            padding: 6px 12px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .edit-btn {
+            background: var(--warning);
+            color: #000;
+        }
+        
+        .delete-btn {
+            background: var(--danger);
+            color: white;
+        }
+        
+        /* STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            color: var(--primary);
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .alert-success {
+            background: rgba(74, 222, 128, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+        
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            .container-main {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fas fa-lock"></i> Admin
+            </div>
+            <div class="sidebar-menu">
+                <div class="sidebar-item active" onclick="switchTab('dashboard')">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </div>
+                <div class="sidebar-item" onclick="switchTab('miners')">
+                    <i class="fas fa-hammer"></i> Miners
+                </div>
+                <div class="sidebar-item" onclick="switchTab('sellers')">
+                    <i class="fas fa-store"></i> Sellers
+                </div>
+                <div class="sidebar-item" onclick="switchTab('prices')">
+                    <i class="fas fa-tag"></i> Seller Prices
+                </div>
+                <div class="sidebar-item" onclick="switchTab('coins')">
+                    <i class="fas fa-coins"></i> Coins
+                </div>
+                <div class="sidebar-item" onclick="switchTab('logs')">
+                    <i class="fas fa-history"></i> Update Logs
+                </div>
+                <hr style="margin: 20px 0; border-color: var(--border);">
+                <div class="sidebar-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </div>
+            </div>
+        </div>
+        
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <div class="header">
+                <h1>⛏️ MinerPrices Admin Panel</h1>
+                <button class="logout-btn" onclick="logout()">Sign Out</button>
+            </div>
+            
+            <!-- DASHBOARD TAB -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Total Miners</div>
+                        <div class="stat-value" id="totalMiners">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Total Sellers</div>
+                        <div class="stat-value" id="totalSellers">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Listings</div>
+                        <div class="stat-value" id="totalListings">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Last Update</div>
+                        <div class="stat-value" id="lastUpdate" style="font-size: 14px;">--:--</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Recent Updates</h2>
+                    <div id="recentUpdates" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Miners Updated</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="updatesTableBody">
+                                <tr><td colspan="4" class="empty-state">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MINERS TAB -->
+            <div id="miners" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2>Manage Miners</h2>
+                        <button class="btn btn-primary" onclick="openMinerModal()">
+                            <i class="fas fa-plus"></i> Add Miner
+                        </button>
+                    </div>
+                    
+                    <div id="minersTableContainer" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Algorithm</th>
+                                    <th>Hashrate</th>
+                                    <th>Power</th>
+                                    <th>Daily Profit</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="minersTableBody">
+                                <tr><td colspan="6" class="empty-state">Loading miners...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SELLERS TAB -->
+            <div id="sellers" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2>Manage Sellers</h2>
+                        <button class="btn btn-primary" onclick="openSellerModal()">
+                            <i class="fas fa-plus"></i> Add Seller
+                        </button>
+                    </div>
+                    
+                    <div id="sellersTableContainer" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Website</th>
+                                    <th>Country</th>
+                                    <th>Verified</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sellersTableBody">
+                                <tr><td colspan="5" class="empty-state">Loading sellers...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PRICES TAB -->
+            <div id="prices" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2>Manage Seller Prices</h2>
+                        <button class="btn btn-primary" onclick="openPriceModal()">
+                            <i class="fas fa-plus"></i> Add Price
+                        </button>
+                    </div>
+                    
+                    <div id="pricesTableContainer" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Seller</th>
+                                    <th>Miner</th>
+                                    <th>Price</th>
+                                    <th>Shipping</th>
+                                    <th>Total</th>
+                                    <th>Stock</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pricesTableBody">
+                                <tr><td colspan="7" class="empty-state">Loading prices...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- COINS TAB -->
+            <div id="coins" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2>Manage Coins</h2>
+                        <button class="btn btn-primary" onclick="openCoinModal()">
+                            <i class="fas fa-plus"></i> Add Coin
+                        </button>
+                    </div>
+                    
+                    <div id="coinsTableContainer" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Symbol</th>
+                                    <th>Algorithm</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coinsTableBody">
+                                <tr><td colspan="5" class="empty-state">Loading coins...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LOGS TAB -->
+            <div id="logs" class="tab-content">
+                <div class="card">
+                    <h2>Update History</h2>
+                    <div id="logsTableContainer" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Miners</th>
+                                    <th>Errors</th>
+                                    <th>Duration</th>
+                                    <th>Started</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                <tr><td colspan="6" class="empty-state">Loading logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODALS -->
+    <div id="minerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add/Edit Miner</h2>
+                <button class="close-btn" onclick="closeMinerModal()">&times;</button>
+            </div>
+            <div id="minerFormContainer">
+                <!-- Form will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <div id="sellerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add/Edit Seller</h2>
+                <button class="close-btn" onclick="closeSellerModal()">&times;</button>
+            </div>
+            <div id="sellerFormContainer">
+                <!-- Form will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <div id="priceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add/Edit Price</h2>
+                <button class="close-btn" onclick="closePriceModal()">&times;</button>
+            </div>
+            <div id="priceFormContainer">
+                <!-- Form will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <div id="coinModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add/Edit Coin</h2>
+                <button class="close-btn" onclick="closeCoinModal()">&times;</button>
+            </div>
+            <div id="coinFormContainer">
+                <!-- Form will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://huzfnrgfcxlwvmrkoyge.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_s5ocl3sDwpefFYuw3V-JEQ_FQzXGTHZ';
+        const { createClient } = window.supabase;
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.closest('.sidebar-item')?.classList.add('active');
+            
+            // Load data when switching tabs
+            switch(tabName) {
+                case 'miners':
+                    loadMiners();
+                    break;
+                case 'sellers':
+                    loadSellers();
+                    break;
+                case 'prices':
+                    loadPrices();
+                    break;
+                case 'coins':
+                    loadCoins();
+                    break;
+                case 'logs':
+                    loadLogs();
+                    break;
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+            }
+        }
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                // Get stats
+                const { data: miners } = await supabase.from('miners').select('count()');
+                const { data: sellers } = await supabase.from('sellers').select('count()');
+                const { data: listings } = await supabase.from('seller_miners').select('count()');
+                const { data: logs } = await supabase
+                    .from('update_log')
+                    .select('*')
+                    .order('started_at', { ascending: false })
+                    .limit(5);
+                
+                document.getElementById('totalMiners').textContent = miners?.length || 0;
+                document.getElementById('totalSellers').textContent = sellers?.length || 0;
+                document.getElementById('totalListings').textContent = listings?.length || 0;
+                
+                // Load recent updates
+                let html = '';
+                logs?.forEach(log => {
+                    const time = new Date(log.started_at).toLocaleString();
+                    html += `
+                        <tr>
+                            <td>${log.update_type}</td>
+                            <td><span style="color: ${log.status === 'completed' ? '#4ade80' : '#f59e0b'};">${log.status}</span></td>
+                            <td>${log.miners_updated}</td>
+                            <td>${time}</td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('updatesTableBody').innerHTML = html || '<tr><td colspan="4" class="empty-state">No updates yet</td></tr>';
+                
+                if (logs?.length > 0) {
+                    const lastTime = new Date(logs[0].started_at);
+                    document.getElementById('lastUpdate').textContent = lastTime.toLocaleTimeString();
+                }
+                
+            } catch (error) {
+                console.error('Dashboard error:', error);
+            }
+        }
+
+        // Load Miners
+        async function loadMiners() {
+            try {
+                const { data, error } = await supabase
+                    .from('miners')
+                    .select('*')
+                    .order('daily_profit_latest', { ascending: false });
+                
+                if (error) throw error;
+                
+                let html = '';
+                data?.forEach(miner => {
+                    html += `
+                        <tr>
+                            <td>${miner.name}</td>
+                            <td>${miner.algorithm}</td>
+                            <td>${formatHashrate(miner.hashrate)}</td>
+                            <td>${miner.power}W</td>
+                            <td>$${miner.daily_profit_latest?.toFixed(2) || '0.00'}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="edit-btn" onclick="editMiner('${miner.id}')">Edit</button>
+                                    <button class="delete-btn" onclick="deleteMiner('${miner.id}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('minersTableBody').innerHTML = html || '<tr><td colspan="6" class="empty-state">No miners yet</td></tr>';
+                
+            } catch (error) {
+                console.error('Load miners error:', error);
+            }
+        }
+
+        // Load Sellers
+        async function loadSellers() {
+            try {
+                const { data, error } = await supabase
+                    .from('sellers')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                let html = '';
+                data?.forEach(seller => {
+                    html += `
+                        <tr>
+                            <td>${seller.name}</td>
+                            <td><a href="${seller.website_url}" target="_blank" style="color: var(--primary);">${seller.website_url.substring(0, 30)}...</a></td>
+                            <td>${seller.country || '--'}</td>
+                            <td>${seller.verified ? '✅' : '❌'}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="edit-btn" onclick="editSeller('${seller.id}')">Edit</button>
+                                    <button class="delete-btn" onclick="deleteSeller('${seller.id}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('sellersTableBody').innerHTML = html || '<tr><td colspan="5" class="empty-state">No sellers yet</td></tr>';
+                
+            } catch (error) {
+                console.error('Load sellers error:', error);
+            }
+        }
+
+        // Load Prices
+        async function loadPrices() {
+            try {
+                const { data, error } = await supabase
+                    .from('seller_miners')
+                    .select(`
+                        id,
+                        purchase_price,
+                        shipping_cost,
+                        total_price,
+                        in_stock,
+                        shop_url,
+                        miners (name),
+                        sellers (name)
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                let html = '';
+                data?.forEach(price => {
+                    html += `
+                        <tr>
+                            <td>${price.sellers?.name || 'Unknown'}</td>
+                            <td>${price.miners?.name || 'Unknown'}</td>
+                            <td>$${price.purchase_price?.toFixed(2) || '0.00'}</td>
+                            <td>$${price.shipping_cost?.toFixed(2) || '0.00'}</td>
+                            <td>$${price.total_price?.toFixed(2) || '0.00'}</td>
+                            <td>${price.in_stock ? '✅ In Stock' : '❌ Out'}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="edit-btn" onclick="editPrice('${price.id}')">Edit</button>
+                                    <button class="delete-btn" onclick="deletePrice('${price.id}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('pricesTableBody').innerHTML = html || '<tr><td colspan="7" class="empty-state">No prices yet</td></tr>';
+                
+            } catch (error) {
+                console.error('Load prices error:', error);
+            }
+        }
+
+        // Load Coins
+        async function loadCoins() {
+            try {
+                const { data, error } = await supabase
+                    .from('coins')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                let html = '';
+                data?.forEach(coin => {
+                    html += `
+                        <tr>
+                            <td>${coin.name}</td>
+                            <td>${coin.symbol}</td>
+                            <td>${coin.algorithm}</td>
+                            <td>$${coin.current_price?.toFixed(2) || '0.00'}</td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="edit-btn" onclick="editCoin('${coin.id}')">Edit</button>
+                                    <button class="delete-btn" onclick="deleteCoin('${coin.id}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('coinsTableBody').innerHTML = html || '<tr><td colspan="5" class="empty-state">No coins yet</td></tr>';
+                
+            } catch (error) {
+                console.error('Load coins error:', error);
+            }
+        }
+
+        // Load Logs
+        async function loadLogs() {
+            try {
+                const { data, error } = await supabase
+                    .from('update_log')
+                    .select('*')
+                    .order('started_at', { ascending: false })
+                    .limit(50);
+                
+                if (error) throw error;
+                
+                let html = '';
+                data?.forEach(log => {
+                    const time = new Date(log.started_at).toLocaleString();
+                    html += `
+                        <tr>
+                            <td>${log.update_type}</td>
+                            <td><span style="color: ${log.status === 'completed' ? '#4ade80' : log.status === 'failed' ? '#ef4444' : '#f59e0b'};">${log.status}</span></td>
+                            <td>${log.miners_updated || 0}</td>
+                            <td>${log.errors_count || 0}</td>
+                            <td>${log.duration_seconds ? log.duration_seconds + 's' : '--'}</td>
+                            <td>${time}</td>
+                        </tr>
+                    `;
+                });
+                
+                document.getElementById('logsTableBody').innerHTML = html || '<tr><td colspan="6" class="empty-state">No logs yet</td></tr>';
+                
+            } catch (error) {
+                console.error('Load logs error:', error);
+            }
+        }
+
+        // Modal handlers
+        function openMinerModal() {
+            document.getElementById('minerModal').classList.add('active');
+        }
+
+        function closeMinerModal() {
+            document.getElementById('minerModal').classList.remove('active');
+        }
+
+        function openSellerModal() {
+            document.getElementById('sellerModal').classList.add('active');
+        }
+
+        function closeSellerModal() {
+            document.getElementById('sellerModal').classList.remove('active');
+        }
+
+        function openPriceModal() {
+            document.getElementById('priceModal').classList.add('active');
+        }
+
+        function closePriceModal() {
+            document.getElementById('priceModal').classList.remove('active');
+        }
+
+        function openCoinModal() {
+            document.getElementById('coinModal').classList.add('active');
+        }
+
+        function closeCoinModal() {
+            document.getElementById('coinModal').classList.remove('active');
+        }
+
+        // Delete functions
+        async function deleteMiner(id) {
+            if (confirm('Delete this miner?')) {
+                await supabase.from('miners').delete().eq('id', id);
+                loadMiners();
+            }
+        }
+
+        async function deleteSeller(id) {
+            if (confirm('Delete this seller?')) {
+                await supabase.from('sellers').delete().eq('id', id);
+                loadSellers();
+            }
+        }
+
+        async function deletePrice(id) {
+            if (confirm('Delete this price?')) {
+                await supabase.from('seller_miners').delete().eq('id', id);
+                loadPrices();
+            }
+        }
+
+        async function deleteCoin(id) {
+            if (confirm('Delete this coin?')) {
+                await supabase.from('coins').delete().eq('id', id);
+                loadCoins();
+            }
+        }
+
+        function formatHashrate(hashrate) {
+            if (!hashrate) return 'N/A';
+            if (hashrate >= 1e15) return (hashrate / 1e15).toFixed(2) + ' PH/s';
+            if (hashrate >= 1e12) return (hashrate / 1e12).toFixed(2) + ' TH/s';
+            if (hashrate >= 1e9) return (hashrate / 1e9).toFixed(2) + ' GH/s';
+            return hashrate.toFixed(2) + ' H/s';
+        }
+
+        function logout() {
+            // Redirect to home
+            window.location.href = '/';
+        }
+
+        // Load dashboard on init
+        window.addEventListener('load', loadDashboard);
+    </script>
+</body>
+</html>
